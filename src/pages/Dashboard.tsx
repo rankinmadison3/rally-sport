@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { TrendingUp, FileText, Users, Trophy, LogOut, Copy, Check } from "lucide-react";
+import { TrendingUp, FileText, Users, Trophy, LogOut, Copy, Check, Pencil } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -14,6 +14,8 @@ const Dashboard = () => {
   const [teamName, setTeamName] = useState("");
   const [teamMembers, setTeamMembers] = useState<{ display_name: string; joined_at: string }[]>([]);
   const [copied, setCopied] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState("");
 
   useEffect(() => {
     if (!teamId) return;
@@ -101,6 +103,19 @@ const Dashboard = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleRename = async () => {
+    const trimmed = editName.trim();
+    if (!trimmed || !teamId) return;
+    const { error } = await supabase.from("teams").update({ name: trimmed }).eq("id", teamId);
+    if (error) {
+      toast.error("Failed to rename team");
+    } else {
+      setTeamName(trimmed);
+      toast.success("Team renamed!");
+    }
+    setEditing(false);
+  };
+
   const total = wins + losses;
   const winPct = total > 0 ? Math.round((wins / total) * 100) : 0;
 
@@ -129,7 +144,26 @@ const Dashboard = () => {
               <span className="text-sm font-bold text-primary">{teamMembers.length} players</span>
             </div>
           </div>
-          <p className="text-sm text-muted-foreground">{teamName}</p>
+          {editing ? (
+            <div className="flex items-center gap-2">
+              <input
+                autoFocus
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleRename()}
+                className="flex-1 text-sm bg-muted rounded-lg px-3 py-1.5 text-foreground outline-none focus:ring-2 focus:ring-primary"
+              />
+              <button onClick={handleRename} className="text-xs font-medium text-primary">Save</button>
+              <button onClick={() => setEditing(false)} className="text-xs text-muted-foreground">Cancel</button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-muted-foreground">{teamName}</p>
+              <button onClick={() => { setEditName(teamName); setEditing(true); }}>
+                <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+              </button>
+            </div>
+          )}
           <div className="flex items-center gap-3">
             <code className="flex-1 text-2xl font-mono font-bold tracking-[0.3em] text-center py-2 bg-muted rounded-lg text-foreground">
               {teamCode}
