@@ -1,11 +1,45 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Shield, ChevronRight } from "lucide-react";
+import { Shield, ChevronRight, Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 const Login = () => {
   const navigate = useNavigate();
-  const [phone, setPhone] = useState("");
-  const [dob, setDob] = useState("");
+  const { signIn, signUp } = useAuth();
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [role, setRole] = useState<"coach" | "player">("player");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!email || !password) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+    setLoading(true);
+    try {
+      if (isSignUp) {
+        if (!displayName) {
+          toast.error("Please enter your name");
+          setLoading(false);
+          return;
+        }
+        await signUp(email, password, displayName, role);
+        toast.success("Account created! Check your email to verify.");
+      } else {
+        await signIn(email, password);
+        toast.success("Welcome back!");
+        navigate("/");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-primary">
@@ -20,41 +54,82 @@ const Login = () => {
 
       {/* Login Form */}
       <div className="bg-card rounded-t-3xl px-6 pt-8 pb-10 space-y-5">
-        <h2 className="text-xl font-display font-bold text-card-foreground">Sign In</h2>
+        <h2 className="text-xl font-display font-bold text-card-foreground">
+          {isSignUp ? "Create Account" : "Sign In"}
+        </h2>
+
+        {isSignUp && (
+          <>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">Full Name</label>
+              <input
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder="John Doe"
+                className="w-full px-4 py-3 rounded-lg bg-muted text-foreground text-sm border border-border focus:outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground">I am a...</label>
+              <div className="flex gap-2">
+                {(["coach", "player"] as const).map((r) => (
+                  <button
+                    key={r}
+                    onClick={() => setRole(r)}
+                    className={`flex-1 py-2.5 rounded-lg text-sm font-semibold capitalize transition-colors ${
+                      role === r
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
 
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground">Phone Number</label>
+          <label className="text-xs font-medium text-muted-foreground">Email</label>
           <input
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="+1 (555) 000-0000"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@email.com"
             className="w-full px-4 py-3 rounded-lg bg-muted text-foreground text-sm border border-border focus:outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground"
           />
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground">Date of Birth</label>
+          <label className="text-xs font-medium text-muted-foreground">Password</label>
           <input
-            type="date"
-            value={dob}
-            onChange={(e) => setDob(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg bg-muted text-foreground text-sm border border-border focus:outline-none focus:ring-2 focus:ring-ring"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            className="w-full px-4 py-3 rounded-lg bg-muted text-foreground text-sm border border-border focus:outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground"
           />
-          <p className="text-[10px] text-muted-foreground">Must be 13+ to create an account</p>
         </div>
 
         <button
-          onClick={() => navigate("/")}
-          className="w-full py-3.5 bg-primary text-primary-foreground rounded-xl font-semibold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+          onClick={handleSubmit}
+          disabled={loading}
+          className="w-full py-3.5 bg-primary text-primary-foreground rounded-xl font-semibold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50"
         >
-          Continue
-          <ChevronRight className="w-4 h-4" />
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+          {isSignUp ? "Create Account" : "Continue"}
+          {!loading && <ChevronRight className="w-4 h-4" />}
         </button>
 
-        <p className="text-center text-xs text-muted-foreground">
-          By continuing, you agree to our Terms of Service
-        </p>
+        <button
+          onClick={() => setIsSignUp(!isSignUp)}
+          className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          {isSignUp ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
+        </button>
       </div>
     </div>
   );

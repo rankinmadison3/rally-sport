@@ -1,82 +1,98 @@
-import { useState } from "react";
-import { Trophy, XCircle, Clock, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Trophy, XCircle, Clock, MapPin, ChevronLeft, ChevronRight, Plus, Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { format, startOfMonth, endOfMonth, getDay, getDaysInMonth, addMonths, subMonths } from "date-fns";
 
-const events: Record<number, { type: string; label: string }[]> = {
-  3: [{ type: "practice", label: "Practice" }],
-  5: [{ type: "game", label: "District Game vs Lincoln" }],
-  7: [{ type: "absence", label: "Player Absence - J. Smith" }],
-  10: [{ type: "practice", label: "Practice" }],
-  12: [{ type: "game", label: "District Game vs Central" }],
-  14: [{ type: "practice", label: "Practice" }],
-  18: [{ type: "absence", label: "Player Absence - M. Chen" }],
-  20: [{ type: "game", label: "Home Game vs Riverside" }],
-  22: [{ type: "practice", label: "Practice" }],
-  25: [{ type: "game", label: "District Finals" }],
-  28: [{ type: "practice", label: "Practice" }],
-};
-
-const daysInMonth = 31;
-const startDay = 3; // Wednesday
+interface CalendarEvent {
+  id: string;
+  event_type: string;
+  label: string;
+  event_date: string;
+  event_time: string | null;
+  location: string | null;
+}
 
 const TeamCalendar = () => {
-  const [selectedDay, setSelectedDay] = useState<number | null>(5);
+  const { role, teamId } = useAuth();
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const dayEvents = selectedDay ? events[selectedDay] || [] : [];
+  const year = currentMonth.getFullYear();
+  const month = currentMonth.getMonth();
+  const daysInMonth = getDaysInMonth(currentMonth);
+  const startDay = getDay(startOfMonth(currentMonth));
+
+  useEffect(() => {
+    if (!teamId) return;
+    const fetchEvents = async () => {
+      const start = format(startOfMonth(currentMonth), "yyyy-MM-dd");
+      const end = format(endOfMonth(currentMonth), "yyyy-MM-dd");
+      const { data } = await supabase
+        .from("calendar_events")
+        .select("id, event_type, label, event_date, event_time, location")
+        .eq("team_id", teamId)
+        .gte("event_date", start)
+        .lte("event_date", end);
+      setEvents((data as CalendarEvent[]) || []);
+      setLoading(false);
+    };
+    fetchEvents();
+  }, [teamId, currentMonth]);
+
+  const getEventsForDay = (day: number) => {
+    const dateStr = format(new Date(year, month, day), "yyyy-MM-dd");
+    return events.filter((e) => e.event_date === dateStr);
+  };
+
+  const dayEvents = selectedDay ? getEventsForDay(selectedDay) : [];
 
   return (
     <div className="p-4 space-y-4">
-      {/* Header */}
       <div>
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Team</p>
         <h1 className="text-2xl font-bold font-display text-foreground">Calendar</h1>
       </div>
 
-      {/* Month Nav */}
       <div className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)]">
         <div className="flex items-center justify-between mb-4">
-          <button className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+          <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
             <ChevronLeft className="w-5 h-5 text-muted-foreground" />
           </button>
-          <h2 className="font-display font-semibold text-card-foreground">February 2026</h2>
-          <button className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+          <h2 className="font-display font-semibold text-card-foreground">{format(currentMonth, "MMMM yyyy")}</h2>
+          <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
           </button>
         </div>
 
-        {/* Day Headers */}
         <div className="grid grid-cols-7 gap-1 mb-2">
           {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-            <div key={i} className="text-center text-[10px] font-medium text-muted-foreground py-1">
-              {d}
-            </div>
+            <div key={i} className="text-center text-[10px] font-medium text-muted-foreground py-1">{d}</div>
           ))}
         </div>
 
-        {/* Calendar Grid */}
         <div className="grid grid-cols-7 gap-1">
-          {Array.from({ length: startDay }).map((_, i) => (
-            <div key={`empty-${i}`} />
-          ))}
+          {Array.from({ length: startDay }).map((_, i) => <div key={`e-${i}`} />)}
           {Array.from({ length: daysInMonth }).map((_, i) => {
             const day = i + 1;
-            const dayEvt = events[day];
+            const dayEvts = getEventsForDay(day);
             const isSelected = selectedDay === day;
-            const hasGame = dayEvt?.some((e) => e.type === "game");
-            const hasAbsence = dayEvt?.some((e) => e.type === "absence");
-            const hasPractice = dayEvt?.some((e) => e.type === "practice");
-
+            const hasGame = dayEvts.some((e) => e.event_type === "game");
+            const hasAbsence = dayEvts.some((e) => e.event_type === "absence");
+            const hasPractice = dayEvts.some((e) => e.event_type === "practice");
             return (
               <button
                 key={day}
                 onClick={() => setSelectedDay(day)}
                 className={`relative aspect-square flex flex-col items-center justify-center rounded-lg text-sm transition-all ${
-                  isSelected
-                    ? "bg-primary text-primary-foreground font-bold"
-                    : "hover:bg-muted text-card-foreground"
+                  isSelected ? "bg-primary text-primary-foreground font-bold" : "hover:bg-muted text-card-foreground"
                 }`}
               >
                 {day}
-                {dayEvt && !isSelected && (
+                {dayEvts.length > 0 && !isSelected && (
                   <div className="absolute bottom-0.5 flex gap-0.5">
                     {hasGame && <Trophy className="w-2.5 h-2.5 text-primary" />}
                     {hasAbsence && <XCircle className="w-2.5 h-2.5 text-destructive" />}
@@ -88,44 +104,31 @@ const TeamCalendar = () => {
           })}
         </div>
 
-        {/* Legend */}
         <div className="flex gap-4 mt-3 pt-3 border-t border-border">
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-            <Trophy className="w-3 h-3 text-primary" /> Game
-          </div>
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-            <XCircle className="w-3 h-3 text-destructive" /> Absence
-          </div>
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-            <div className="w-2 h-2 rounded-full bg-success" /> Practice
-          </div>
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground"><Trophy className="w-3 h-3 text-primary" /> Game</div>
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground"><XCircle className="w-3 h-3 text-destructive" /> Absence</div>
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground"><div className="w-2 h-2 rounded-full bg-success" /> Practice</div>
         </div>
       </div>
 
-      {/* Event Detail Sheet */}
       {selectedDay && (
         <div className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] space-y-3">
           <h3 className="font-display font-semibold text-card-foreground">
-            February {selectedDay}
+            {format(new Date(year, month, selectedDay), "MMMM d")}
           </h3>
           {dayEvents.length > 0 ? (
-            dayEvents.map((evt, i) => (
-              <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-muted">
+            dayEvents.map((evt) => (
+              <div key={evt.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted">
                 <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center shrink-0">
-                  {evt.type === "game" ? (
-                    <Trophy className="w-4 h-4 text-primary" />
-                  ) : evt.type === "absence" ? (
-                    <XCircle className="w-4 h-4 text-destructive" />
-                  ) : (
-                    <Clock className="w-4 h-4 text-success" />
-                  )}
+                  {evt.event_type === "game" ? <Trophy className="w-4 h-4 text-primary" /> :
+                   evt.event_type === "absence" ? <XCircle className="w-4 h-4 text-destructive" /> :
+                   <Clock className="w-4 h-4 text-success" />}
                 </div>
                 <div>
                   <p className="text-sm font-medium text-foreground">{evt.label}</p>
                   <div className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground">
-                    <Clock className="w-3 h-3" /> 4:00 PM
-                    <span className="mx-1">•</span>
-                    <MapPin className="w-3 h-3" /> Main Court
+                    {evt.event_time && <><Clock className="w-3 h-3" /> {evt.event_time}</>}
+                    {evt.location && <><span className="mx-1">•</span><MapPin className="w-3 h-3" /> {evt.location}</>}
                   </div>
                 </div>
               </div>
