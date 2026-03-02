@@ -12,6 +12,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [role, setRole] = useState<"coach" | "player">("player");
+  const [teamCode, setTeamCode] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
@@ -27,7 +28,12 @@ const Login = () => {
           setLoading(false);
           return;
         }
-        await signUp(email, password, displayName, role);
+        if (role === "player" && !teamCode.trim()) {
+          toast.error("Please enter your team code");
+          setLoading(false);
+          return;
+        }
+        await signUp(email, password, displayName, role, role === "player" ? teamCode.trim().toUpperCase() : undefined);
         toast.success("Account created! Check your email to verify.");
       } else {
         await signIn(email, password);
@@ -89,6 +95,20 @@ const Login = () => {
                 ))}
               </div>
             </div>
+
+            {role === "player" && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Team Code</label>
+                <input
+                  type="text"
+                  value={teamCode}
+                  onChange={(e) => setTeamCode(e.target.value.toUpperCase())}
+                  placeholder="e.g. A7K9Q2"
+                  maxLength={6}
+                  className="w-full px-4 py-3 rounded-lg bg-muted text-foreground text-sm border border-border focus:outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground tracking-widest font-mono"
+                />
+              </div>
+            )}
           </>
         )}
 
