@@ -92,15 +92,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signUp = async (email: string, password: string, displayName: string, selectedRole: AppRole, teamCode?: string) => {
-    // If player, validate team code first
-    if (selectedRole === "player" && teamCode) {
-      const { data: team, error: teamError } = await supabase
-        .from("teams")
-        .select("id")
-        .eq("code", teamCode)
-        .single();
-      if (teamError || !team) throw new Error("Invalid team code. Please check with your coach.");
-    }
 
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -123,15 +114,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .single();
         if (team) setTeamId(team.id);
       } else if (selectedRole === "player" && teamCode) {
-        const { data: team } = await supabase
+        const { data: team, error: teamError } = await supabase
           .from("teams")
           .select("id")
           .eq("code", teamCode)
           .single();
-        if (team) {
-          await supabase.from("team_members").insert({ team_id: team.id, user_id: data.user.id });
-          setTeamId(team.id);
+        if (teamError || !team) {
+          throw new Error("Invalid team code. Please check with your coach.");
         }
+        await supabase.from("team_members").insert({ team_id: team.id, user_id: data.user.id });
+        setTeamId(team.id);
       }
 
       setRole(selectedRole);
