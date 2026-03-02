@@ -342,6 +342,7 @@ export type Database = {
       teams: {
         Row: {
           coach_id: string
+          code: string
           created_at: string
           id: string
           name: string
@@ -350,6 +351,7 @@ export type Database = {
         }
         Insert: {
           coach_id: string
+          code?: string
           created_at?: string
           id?: string
           name: string
@@ -358,6 +360,7 @@ export type Database = {
         }
         Update: {
           coach_id?: string
+          code?: string
           created_at?: string
           id?: string
           name?: string
