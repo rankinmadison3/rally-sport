@@ -135,6 +135,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       setRole(selectedRole);
+
+      // Re-fetch to ensure state is consistent after all inserts are done
+      await fetchRoleAndTeam(data.user.id);
     }
   };
 
