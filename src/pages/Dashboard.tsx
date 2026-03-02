@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { TrendingUp, FileText, Users, Trophy, LogOut } from "lucide-react";
+import { TrendingUp, FileText, Users, Trophy, LogOut, Copy, Check } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -10,6 +10,10 @@ const Dashboard = () => {
   const [losses, setLosses] = useState(0);
   const [moraleData, setMoraleData] = useState<number[]>([]);
   const [feedbackForms, setFeedbackForms] = useState<{ title: string; responses: number; total: number }[]>([]);
+  const [teamCode, setTeamCode] = useState("");
+  const [teamName, setTeamName] = useState("");
+  const [teamMembers, setTeamMembers] = useState<{ display_name: string; joined_at: string }[]>([]);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!teamId) return;
@@ -18,12 +22,36 @@ const Dashboard = () => {
       // Fetch team record
       const { data: team } = await supabase
         .from("teams")
-        .select("season_wins, season_losses")
+        .select("season_wins, season_losses, code, name")
         .eq("id", teamId)
         .single();
       if (team) {
         setWins(team.season_wins);
         setLosses(team.season_losses);
+        setTeamCode(team.code);
+        setTeamName(team.name);
+      }
+
+      // Fetch team members with profiles
+      if (role === "coach") {
+        const { data: members } = await supabase
+          .from("team_members")
+          .select("joined_at, user_id")
+          .eq("team_id", teamId);
+        if (members && members.length > 0) {
+          const userIds = members.map((m) => m.user_id);
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("user_id, display_name")
+            .in("user_id", userIds);
+          const profileMap = new Map(profiles?.map((p) => [p.user_id, p.display_name]) || []);
+          setTeamMembers(
+            members.map((m) => ({
+              display_name: profileMap.get(m.user_id) || "Unknown",
+              joined_at: m.joined_at,
+            }))
+          );
+        }
       }
 
       // Fetch morale data (aggregate mood per day, last 11)
@@ -64,7 +92,14 @@ const Dashboard = () => {
     };
 
     fetchData();
-  }, [teamId]);
+  }, [teamId, role]);
+
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(teamCode);
+    setCopied(true);
+    toast.success("Team code copied!");
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const total = wins + losses;
   const winPct = total > 0 ? Math.round((wins / total) * 100) : 0;
@@ -84,7 +119,44 @@ const Dashboard = () => {
         </button>
       </div>
 
-      {/* Season Progress */}
+      {/* Team Code Card - Coach Only */}
+      {role === "coach" && teamCode && (
+        <div className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display font-semibold text-card-foreground">Your Team</h2>
+            <div className="flex items-center gap-1.5">
+              <Users className="w-4 h-4 text-primary" />
+              <span className="text-sm font-bold text-primary">{teamMembers.length} players</span>
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground">{teamName}</p>
+          <div className="flex items-center gap-3">
+            <code className="flex-1 text-2xl font-mono font-bold tracking-[0.3em] text-center py-2 bg-muted rounded-lg text-foreground">
+              {teamCode}
+            </code>
+            <button
+              onClick={handleCopyCode}
+              className="w-10 h-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shrink-0"
+            >
+              {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+            </button>
+          </div>
+          <p className="text-xs text-muted-foreground text-center">Share this code with players to join</p>
+          {teamMembers.length > 0 && (
+            <div className="border-t border-border pt-3 space-y-2">
+              {teamMembers.map((m, i) => (
+                <div key={i} className="flex items-center justify-between text-sm">
+                  <span className="text-card-foreground">{m.display_name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(m.joined_at).toLocaleDateString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="font-display font-semibold text-card-foreground">Season Progress</h2>
