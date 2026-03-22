@@ -150,49 +150,53 @@ const Dashboard = () => {
               </button>
             </div>
           </div>
-          {editing ? (
-            <div className="flex items-center gap-2">
-              <input
-                autoFocus
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleRename()}
-                className="flex-1 text-sm bg-muted rounded-lg px-3 py-1.5 text-foreground outline-none focus:ring-2 focus:ring-primary"
-              />
-              <button onClick={handleRename} className="text-xs font-medium text-primary">Save</button>
-              <button onClick={() => setEditing(false)} className="text-xs text-muted-foreground">Cancel</button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <p className="text-sm text-muted-foreground">{teamName}</p>
-              <button onClick={() => { setEditName(teamName); setEditing(true); }}>
-                <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
-              </button>
-            </div>
-          )}
-          <div className="flex items-center gap-3">
-            <code className="flex-1 text-2xl font-mono font-bold tracking-[0.3em] text-center py-2 bg-muted rounded-lg text-foreground">
-              {teamCode}
-            </code>
-            <button
-              onClick={handleCopyCode}
-              className="w-10 h-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shrink-0"
-            >
-              {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-            </button>
-          </div>
-          <p className="text-xs text-muted-foreground text-center">Share this code with players to join</p>
-          {teamMembers.length > 0 && (
-            <div className="border-t border-border pt-3 space-y-2">
-              {teamMembers.map((m, i) => (
-                <div key={i} className="flex items-center justify-between text-sm">
-                  <span className="text-card-foreground">{m.display_name}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(m.joined_at).toLocaleDateString()}
-                  </span>
+          {!collapsed && (
+            <>
+              {editing ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    autoFocus
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleRename()}
+                    className="flex-1 text-sm bg-muted rounded-lg px-3 py-1.5 text-foreground outline-none focus:ring-2 focus:ring-primary"
+                  />
+                  <button onClick={handleRename} className="text-xs font-medium text-primary">Save</button>
+                  <button onClick={() => setEditing(false)} className="text-xs text-muted-foreground">Cancel</button>
                 </div>
-              ))}
-            </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <p className="text-sm text-muted-foreground">{teamName}</p>
+                  <button onClick={() => { setEditName(teamName); setEditing(true); }}>
+                    <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+                  </button>
+                </div>
+              )}
+              <div className="flex items-center gap-3">
+                <code className="flex-1 text-2xl font-mono font-bold tracking-[0.3em] text-center py-2 bg-muted rounded-lg text-foreground">
+                  {teamCode}
+                </code>
+                <button
+                  onClick={handleCopyCode}
+                  className="w-10 h-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shrink-0"
+                >
+                  {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground text-center">Share this code with players to join</p>
+              {teamMembers.length > 0 && (
+                <div className="border-t border-border pt-3 space-y-2">
+                  {teamMembers.map((m, i) => (
+                    <div key={i} className="flex items-center justify-between text-sm">
+                      <span className="text-card-foreground">{m.display_name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(m.joined_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
