@@ -11,7 +11,7 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [role, setRole] = useState<"coach" | "player">("player");
+  const [role, setRole] = useState<"coach" | "player" | "manager">("player");
   const [teamCode, setTeamCode] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -28,12 +28,12 @@ const Login = () => {
           setLoading(false);
           return;
         }
-        if (role === "player" && !teamCode.trim()) {
+        if ((role === "player" || role === "manager") && !teamCode.trim()) {
           toast.error("Please enter your team code");
           setLoading(false);
           return;
         }
-        await signUp(email, password, displayName, role, role === "player" ? teamCode.trim().toUpperCase() : undefined);
+        await signUp(email, password, displayName, role, (role === "player" || role === "manager") ? teamCode.trim().toUpperCase() : undefined);
         toast.success("Account created! Check your email to verify.");
       } else {
         await signIn(email, password);
@@ -80,7 +80,7 @@ const Login = () => {
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">I am a...</label>
               <div className="flex gap-2">
-                {(["coach", "player"] as const).map((r) => (
+              {(["coach", "manager", "player"] as const).map((r) => (
                   <button
                     key={r}
                     onClick={() => setRole(r)}
@@ -96,7 +96,7 @@ const Login = () => {
               </div>
             </div>
 
-            {role === "player" && (
+            {(role === "player" || role === "manager") && (
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground">Team Code</label>
                 <input

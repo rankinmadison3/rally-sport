@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-type AppRole = "coach" | "player";
+type AppRole = "coach" | "player" | "manager";
 
 interface AuthContextType {
   user: User | null;
@@ -113,7 +113,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .select("id")
           .single();
         if (team) setTeamId(team.id);
-      } else if (selectedRole === "player" && teamCode) {
+      } else if ((selectedRole === "player" || selectedRole === "manager") && teamCode) {
         const { data: team, error: teamError } = await supabase
           .from("teams")
           .select("id")

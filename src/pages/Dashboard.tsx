@@ -36,7 +36,7 @@ const Dashboard = () => {
       }
 
       // Fetch team members with profiles
-      if (role === "coach") {
+      if (role === "coach" || role === "manager") {
         const { data: members } = await supabase
           .from("team_members")
           .select("joined_at, user_id")
@@ -126,7 +126,7 @@ const Dashboard = () => {
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            {role === "coach" ? "Coach's View" : "Player's View"}
+            {role === "coach" ? "Coach's View" : role === "manager" ? "Manager's View" : "Player's View"}
           </p>
           <h1 className="text-2xl font-bold font-display text-foreground">Dashboard</h1>
         </div>
@@ -136,7 +136,7 @@ const Dashboard = () => {
       </div>
 
       {/* Team Code Card - Coach Only */}
-      {role === "coach" && teamCode && (
+      {(role === "coach" || role === "manager") && teamCode && (
         <div className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="font-display font-semibold text-card-foreground">Your Team</h2>
