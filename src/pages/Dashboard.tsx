@@ -126,7 +126,7 @@ const Dashboard = () => {
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            {role === "coach" ? "Coach's View" : "Player's View"}
+            {role === "coach" ? "Coach's View" : role === "manager" ? "Manager's View" : "Player's View"}
           </p>
           <h1 className="text-2xl font-bold font-display text-foreground">Dashboard</h1>
         </div>
