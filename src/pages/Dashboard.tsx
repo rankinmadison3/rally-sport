@@ -16,6 +16,7 @@ const Dashboard = () => {
   const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState("");
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     if (!teamId) return;
