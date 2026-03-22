@@ -80,7 +80,7 @@ const Login = () => {
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">I am a...</label>
               <div className="flex gap-2">
-                {(["coach", "player"] as const).map((r) => (
+              {(["coach", "manager", "player"] as const).map((r) => (
                   <button
                     key={r}
                     onClick={() => setRole(r)}
