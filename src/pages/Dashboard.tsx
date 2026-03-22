@@ -36,7 +36,7 @@ const Dashboard = () => {
       }
 
       // Fetch team members with profiles
-      if (role === "coach") {
+      if (role === "coach" || role === "manager") {
         const { data: members } = await supabase
           .from("team_members")
           .select("joined_at, user_id")
