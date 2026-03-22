@@ -136,7 +136,7 @@ const Dashboard = () => {
       </div>
 
       {/* Team Code Card - Coach Only */}
-      {role === "coach" && teamCode && (
+      {(role === "coach" || role === "manager") && teamCode && (
         <div className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="font-display font-semibold text-card-foreground">Your Team</h2>
