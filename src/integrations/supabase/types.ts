@@ -65,7 +65,9 @@ export type Database = {
           event_date: string
           event_time: string | null
           event_type: string
+          game_result: string | null
           id: string
+          is_regular_season: boolean
           label: string
           location: string | null
           team_id: string
@@ -76,7 +78,9 @@ export type Database = {
           event_date: string
           event_time?: string | null
           event_type: string
+          game_result?: string | null
           id?: string
+          is_regular_season?: boolean
           label: string
           location?: string | null
           team_id: string
@@ -87,7 +91,9 @@ export type Database = {
           event_date?: string
           event_time?: string | null
           event_type?: string
+          game_result?: string | null
           id?: string
+          is_regular_season?: boolean
           label?: string
           location?: string | null
           team_id?: string
