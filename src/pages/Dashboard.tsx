@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { TrendingUp, FileText, Users, Trophy, LogOut, Copy, Check, Pencil } from "lucide-react";
+import { TrendingUp, FileText, Users, Trophy, LogOut, Copy, Check, Pencil, ChevronDown, ChevronUp } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
