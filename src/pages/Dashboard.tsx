@@ -140,9 +140,14 @@ const Dashboard = () => {
         <div className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="font-display font-semibold text-card-foreground">Your Team</h2>
-            <div className="flex items-center gap-1.5">
-              <Users className="w-4 h-4 text-primary" />
-              <span className="text-sm font-bold text-primary">{teamMembers.length} players</span>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
+                <Users className="w-4 h-4 text-primary" />
+                <span className="text-sm font-bold text-primary">{teamMembers.length} players</span>
+              </div>
+              <button onClick={() => setCollapsed(!collapsed)} className="w-7 h-7 rounded-full bg-muted flex items-center justify-center">
+                {collapsed ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronUp className="w-4 h-4 text-muted-foreground" />}
+              </button>
             </div>
           </div>
           {editing ? (
