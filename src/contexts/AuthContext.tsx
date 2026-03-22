@@ -113,7 +113,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .select("id")
           .single();
         if (team) setTeamId(team.id);
-      } else if (selectedRole === "player" && teamCode) {
+      } else if ((selectedRole === "player" || selectedRole === "manager") && teamCode) {
         const { data: team, error: teamError } = await supabase
           .from("teams")
           .select("id")
