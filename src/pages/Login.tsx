@@ -96,7 +96,7 @@ const Login = () => {
               </div>
             </div>
 
-            {role === "player" && (
+            {(role === "player" || role === "manager") && (
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground">Team Code</label>
                 <input
