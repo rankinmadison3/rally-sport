@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { TrendingUp, FileText, Users, Trophy, LogOut, Copy, Check, Pencil } from "lucide-react";
+import { TrendingUp, FileText, Users, Trophy, LogOut, Copy, Check, Pencil, ChevronDown, ChevronUp } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -16,6 +16,7 @@ const Dashboard = () => {
   const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState("");
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     if (!teamId) return;
@@ -139,54 +140,63 @@ const Dashboard = () => {
         <div className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="font-display font-semibold text-card-foreground">Your Team</h2>
-            <div className="flex items-center gap-1.5">
-              <Users className="w-4 h-4 text-primary" />
-              <span className="text-sm font-bold text-primary">{teamMembers.length} players</span>
-            </div>
-          </div>
-          {editing ? (
             <div className="flex items-center gap-2">
-              <input
-                autoFocus
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleRename()}
-                className="flex-1 text-sm bg-muted rounded-lg px-3 py-1.5 text-foreground outline-none focus:ring-2 focus:ring-primary"
-              />
-              <button onClick={handleRename} className="text-xs font-medium text-primary">Save</button>
-              <button onClick={() => setEditing(false)} className="text-xs text-muted-foreground">Cancel</button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <p className="text-sm text-muted-foreground">{teamName}</p>
-              <button onClick={() => { setEditName(teamName); setEditing(true); }}>
-                <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+              <div className="flex items-center gap-1.5">
+                <Users className="w-4 h-4 text-primary" />
+                <span className="text-sm font-bold text-primary">{teamMembers.length} players</span>
+              </div>
+              <button onClick={() => setCollapsed(!collapsed)} className="w-7 h-7 rounded-full bg-muted flex items-center justify-center">
+                {collapsed ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronUp className="w-4 h-4 text-muted-foreground" />}
               </button>
             </div>
-          )}
-          <div className="flex items-center gap-3">
-            <code className="flex-1 text-2xl font-mono font-bold tracking-[0.3em] text-center py-2 bg-muted rounded-lg text-foreground">
-              {teamCode}
-            </code>
-            <button
-              onClick={handleCopyCode}
-              className="w-10 h-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shrink-0"
-            >
-              {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-            </button>
           </div>
-          <p className="text-xs text-muted-foreground text-center">Share this code with players to join</p>
-          {teamMembers.length > 0 && (
-            <div className="border-t border-border pt-3 space-y-2">
-              {teamMembers.map((m, i) => (
-                <div key={i} className="flex items-center justify-between text-sm">
-                  <span className="text-card-foreground">{m.display_name}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(m.joined_at).toLocaleDateString()}
-                  </span>
+          {!collapsed && (
+            <>
+              {editing ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    autoFocus
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleRename()}
+                    className="flex-1 text-sm bg-muted rounded-lg px-3 py-1.5 text-foreground outline-none focus:ring-2 focus:ring-primary"
+                  />
+                  <button onClick={handleRename} className="text-xs font-medium text-primary">Save</button>
+                  <button onClick={() => setEditing(false)} className="text-xs text-muted-foreground">Cancel</button>
                 </div>
-              ))}
-            </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <p className="text-sm text-muted-foreground">{teamName}</p>
+                  <button onClick={() => { setEditName(teamName); setEditing(true); }}>
+                    <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+                  </button>
+                </div>
+              )}
+              <div className="flex items-center gap-3">
+                <code className="flex-1 text-2xl font-mono font-bold tracking-[0.3em] text-center py-2 bg-muted rounded-lg text-foreground">
+                  {teamCode}
+                </code>
+                <button
+                  onClick={handleCopyCode}
+                  className="w-10 h-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shrink-0"
+                >
+                  {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground text-center">Share this code with players to join</p>
+              {teamMembers.length > 0 && (
+                <div className="border-t border-border pt-3 space-y-2">
+                  {teamMembers.map((m, i) => (
+                    <div key={i} className="flex items-center justify-between text-sm">
+                      <span className="text-card-foreground">{m.display_name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(m.joined_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
