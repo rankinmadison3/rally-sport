@@ -11,7 +11,7 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [role, setRole] = useState<"coach" | "player">("player");
+  const [role, setRole] = useState<"coach" | "player" | "manager">("player");
   const [teamCode, setTeamCode] = useState("");
   const [loading, setLoading] = useState(false);
 
