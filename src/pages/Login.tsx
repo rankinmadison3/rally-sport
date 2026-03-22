@@ -28,12 +28,12 @@ const Login = () => {
           setLoading(false);
           return;
         }
-        if (role === "player" && !teamCode.trim()) {
+        if ((role === "player" || role === "manager") && !teamCode.trim()) {
           toast.error("Please enter your team code");
           setLoading(false);
           return;
         }
-        await signUp(email, password, displayName, role, role === "player" ? teamCode.trim().toUpperCase() : undefined);
+        await signUp(email, password, displayName, role, (role === "player" || role === "manager") ? teamCode.trim().toUpperCase() : undefined);
         toast.success("Account created! Check your email to verify.");
       } else {
         await signIn(email, password);
