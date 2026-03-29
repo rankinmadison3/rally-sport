@@ -241,7 +241,11 @@ const Dashboard = () => {
       <div className="space-y-3">
         <h2 className="font-display font-semibold text-foreground">Active Feedback Forms</h2>
         {feedbackForms.map((form, i) => (
-          <div key={i} className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] flex items-center gap-3">
+          <div
+            key={i}
+            onClick={() => navigate(role === "player" ? "/feedback-form" : "/feedback")}
+            className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] flex items-center gap-3 cursor-pointer hover:bg-accent/50 transition-colors"
+          >
             <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center shrink-0">
               <FileText className="w-5 h-5 text-accent-foreground" />
             </div>
