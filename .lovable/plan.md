@@ -1,68 +1,26 @@
 
 
-## Email Platform Integration Plan
+## Fix: Dashboard Role Label Flickering
 
-### Important Scope Note
+### Problem
+The "Coach's View" / "Player's View" label in the top-left corner flickers between states on page load. This happens because both `getSession()` and `onAuthStateChange` fire on mount, each triggering `fetchRoleAndTeam` independently. The role state gets set, potentially cleared, then set again — causing the visible switch.
 
-Lovable has built-in email sending (outgoing) for auth and app notifications. However, **incoming email** (receiving external emails into the app) requires a third-party service with inbound email webhooks — this is complex and not natively supported. Your existing Chat page already handles in-app team messaging, which may cover the "inbox" need without actual email.
+### Root Cause
+In `src/contexts/AuthContext.tsx`:
+1. `onAuthStateChange` fires and calls `fetchRoleAndTeam` via `setTimeout(..., 0)`
+2. `getSession()` also fires and calls `fetchRoleAndTeam` directly
+3. Both race against each other, and between calls `role` may briefly be `null` (its initial state), causing the label to flash "Player's View" (the fallback) before settling on the correct role
 
-This plan covers what's achievable with Lovable's built-in email system, plus an enhanced in-app messaging experience.
+### Fix — `src/contexts/AuthContext.tsx`
+- Set up `onAuthStateChange` listener first, but **don't** also call `getSession` + `fetchRoleAndTeam` separately. The `onAuthStateChange` callback fires with the initial session on setup, so the duplicate `getSession` call is redundant and causes the race.
+- Alternatively, use a flag to skip the `onAuthStateChange` callback if `getSession` already handled initialization, and ensure `role` is not rendered until `fetchRoleAndTeam` completes (keep `loading = true` until role is fetched).
 
----
+**Chosen approach**: Remove the duplicate `getSession` block. Let `onAuthStateChange` handle initial session detection (it fires `INITIAL_SESSION` on mount). Remove the `setTimeout` wrapper so `fetchRoleAndTeam` is awaited properly before `setLoading(false)`.
 
-### Phase 1: Email Domain Setup
-- Set up a custom sender domain via Cloud so emails come from your brand (e.g. `notify@yourdomain.com`)
-- This is a prerequisite for all outgoing email features
+### Changes
+**File: `src/contexts/AuthContext.tsx`** (lines 67-89)
+- In `onAuthStateChange`: `await fetchRoleAndTeam(...)` directly instead of wrapping in `setTimeout`, then set `loading = false` after
+- Remove the separate `supabase.auth.getSession().then(...)` block entirely — `onAuthStateChange` already provides the initial session
 
-### Phase 2: Auth Emails
-- Scaffold branded auth email templates (password reset, email verification, magic links)
-- Style templates to match your app's green/sports theme
-- Deploy the `auth-email-hook` edge function
-
-### Phase 3: App Notification Emails (Transactional)
-- **Game reminder emails**: Send to team members before upcoming games
-- **Feedback confirmation emails**: Confirm when a player submits feedback
-- **Team update emails**: Notify players when a coach posts important updates
-- Create React Email templates for each, register in the template registry
-- Wire up triggers in the existing UI (e.g. after feedback submission, before game day)
-
-### Phase 4: Contact Form
-- Add a contact/support page with a form (name, email, message)
-- Create a `contact_submissions` database table
-- Send confirmation email to the submitter via the transactional email system
-
-### Phase 5: Enhanced Team Messaging
-- Improve the existing Chat page with:
-  - Direct messages between any two team members (coach-to-player, player-to-player)
-  - Unread message indicators/badges in the nav
-  - Message timestamps and read receipts
-  - Coach announcements pinned at top
-
-### What's NOT Included
-- **Inbound email receiving** (emails sent from Gmail/Outlook into the app) — this requires a third-party inbound email service (e.g. Mailgun inbound routing) and is significantly more complex. If you need this, we'd need to integrate an external provider.
-
----
-
-### Technical Details
-
-**Database changes:**
-- New `contact_submissions` table (name, email, message, created_at)
-- Add `is_read` boolean to `chat_messages` for read tracking
-- Add `is_pinned` boolean to `chat_messages` for announcements
-
-**Edge Functions:**
-- `auth-email-hook` — branded auth emails
-- `send-transactional-email` — all app notification emails
-- `handle-email-unsubscribe` — unsubscribe handling
-- `handle-email-suppression` — bounce/complaint tracking
-
-**New pages/components:**
-- Contact form page
-- Unsubscribe page
-- Enhanced Chat with DM support and unread badges
-
-**Templates (React Email):**
-- `game-reminder` — upcoming game notification
-- `feedback-confirmation` — feedback submission acknowledgment
-- `contact-confirmation` — contact form receipt
+This eliminates the race condition and the role label will only render once the role is known.
 
