@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 const Dashboard = () => {
   const { user, role, teamId, signOut } = useAuth();
+  const navigate = useNavigate();
   const [wins, setWins] = useState(0);
   const [losses, setLosses] = useState(0);
   const [moraleData, setMoraleData] = useState<number[]>([]);
