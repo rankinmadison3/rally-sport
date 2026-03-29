@@ -70,7 +70,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          setTimeout(() => fetchRoleAndTeam(session.user.id), 0);
+          await fetchRoleAndTeam(session.user.id);
         } else {
           setRole(null);
           setTeamId(null);
@@ -78,15 +78,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
       }
     );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchRoleAndTeam(session.user.id);
-      }
-      setLoading(false);
-    });
 
     return () => subscription.unsubscribe();
   }, []);
