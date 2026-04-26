@@ -1,12 +1,11 @@
 import { ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, MessageCircle, ClipboardCheck, Calendar, User } from "lucide-react";
+import { LayoutDashboard, MessageCircle, Calendar, User } from "lucide-react";
 import logo from "@/assets/rally-sport-logo.png";
 
 const navItems = [
   { path: "/", icon: LayoutDashboard, label: "Dashboard" },
   { path: "/feedback", icon: MessageCircle, label: "Wellness" },
-  { path: "/action-steps", icon: ClipboardCheck, label: "Tasks" },
   { path: "/calendar", icon: Calendar, label: "Calendar" },
   { path: "/chat", icon: User, label: "Chat" },
 ];
