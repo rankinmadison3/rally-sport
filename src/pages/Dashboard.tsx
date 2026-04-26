@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { TrendingUp, FileText, Users, Trophy, LogOut, Copy, Check, Pencil, ChevronDown, ChevronUp } from "lucide-react";
+import { TrendingUp, FileText, Users, Trophy, LogOut, Copy, Check, Pencil, ChevronDown, ChevronUp, ClipboardCheck, ChevronRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
