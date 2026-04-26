@@ -203,6 +203,23 @@ const Dashboard = () => {
         </div>
       )}
 
+      {/* Tasks shortcut */}
+      <button
+        onClick={() => navigate("/tasks")}
+        className="w-full bg-card rounded-xl p-4 shadow-[var(--card-shadow)] flex items-center gap-3 hover:bg-accent/50 transition-colors text-left"
+      >
+        <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center shrink-0">
+          <ClipboardCheck className="w-5 h-5 text-accent-foreground" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-display font-semibold text-card-foreground">Tasks</p>
+          <p className="text-xs text-muted-foreground">
+            {role === "player" ? "View your assignments" : "Assign and track team tasks"}
+          </p>
+        </div>
+        <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+      </button>
+
       <div className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="font-display font-semibold text-card-foreground">Season Progress</h2>
