@@ -7,7 +7,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import MobileLayout from "@/components/MobileLayout";
 import Dashboard from "@/pages/Dashboard";
 import Feedback from "@/pages/Feedback";
-import ActionSteps from "@/pages/ActionSteps";
+
 import TeamCalendar from "@/pages/TeamCalendar";
 import Chat from "@/pages/Chat";
 import FeedbackForm from "@/pages/FeedbackForm";
