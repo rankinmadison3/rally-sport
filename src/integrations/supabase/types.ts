@@ -20,7 +20,9 @@ export type Database = {
           category: string
           created_at: string
           done: boolean
+          due_date: string | null
           id: string
+          notes: string | null
           team_id: string
           text: string
           updated_at: string
@@ -31,7 +33,9 @@ export type Database = {
           category?: string
           created_at?: string
           done?: boolean
+          due_date?: string | null
           id?: string
+          notes?: string | null
           team_id: string
           text: string
           updated_at?: string
@@ -42,7 +46,9 @@ export type Database = {
           category?: string
           created_at?: string
           done?: boolean
+          due_date?: string | null
           id?: string
+          notes?: string | null
           team_id?: string
           text?: string
           updated_at?: string
