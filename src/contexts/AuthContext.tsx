@@ -65,8 +65,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
+    console.log("[AuthProvider] mounting, setting up auth listener");
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
+        console.log("[AuthProvider] onAuthStateChange:", _event, !!session);
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
@@ -82,11 +84,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Fallback: explicitly fetch the initial session in case onAuthStateChange
     // does not fire INITIAL_SESSION promptly.
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      console.log("[AuthProvider] getSession resolved:", !!session);
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
         await fetchRoleAndTeam(session.user.id);
       }
+      setLoading(false);
+    }).catch((err) => {
+      console.error("[AuthProvider] getSession error:", err);
       setLoading(false);
     });
 
