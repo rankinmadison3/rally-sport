@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, MessageCircle, ClipboardCheck, Calendar, User } from "lucide-react";
+import logo from "@/assets/rally-sport-logo.png";
 
 const navItems = [
   { path: "/", icon: LayoutDashboard, label: "Dashboard" },
@@ -18,7 +19,18 @@ const MobileLayout = ({ children }: { children: ReactNode }) => {
 
   return (
     <div className="flex flex-col min-h-screen max-w-md mx-auto bg-background relative">
-      <div className="flex-1 overflow-y-auto pb-20">{children}</div>
+      <div className="flex-1 overflow-y-auto pb-20">
+        <header className="sticky top-0 z-40 bg-card border-b border-border">
+          <div className="flex items-center justify-center py-2">
+            <img
+              src={logo}
+              alt="Rally Sport"
+              className="h-14 w-auto object-contain"
+            />
+          </div>
+        </header>
+        {children}
+      </div>
       <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-card border-t border-border z-50">
         <div className="flex justify-around items-center py-2 px-1">
           {navItems.map((item) => {
