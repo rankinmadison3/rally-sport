@@ -79,6 +79,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
+    // Fallback: explicitly fetch the initial session in case onAuthStateChange
+    // does not fire INITIAL_SESSION promptly.
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        await fetchRoleAndTeam(session.user.id);
+      }
+      setLoading(false);
+    });
+
     return () => subscription.unsubscribe();
   }, []);
 
