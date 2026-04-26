@@ -65,12 +65,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
+    // IMPORTANT: never await other supabase calls directly inside the
+    // onAuthStateChange callback — it can deadlock the auth client. Defer with
+    // setTimeout(..., 0) so the callback returns immediately.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          await fetchRoleAndTeam(session.user.id);
+          setTimeout(() => {
+            fetchRoleAndTeam(session.user.id);
+          }, 0);
         } else {
           setRole(null);
           setTeamId(null);
@@ -78,6 +83,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
       }
     );
+
+    // Fallback: explicitly fetch the initial session in case onAuthStateChange
+    // does not fire INITIAL_SESSION promptly.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchRoleAndTeam(session.user.id);
+      }
+      setLoading(false);
+    }).catch(() => {
+      setLoading(false);
+    });
 
     return () => subscription.unsubscribe();
   }, []);
