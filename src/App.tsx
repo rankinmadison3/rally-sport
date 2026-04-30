@@ -4,7 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import MobileLayout from "@/components/MobileLayout";
+import AppLayout from "@/components/AppLayout";
+import ScrollToTop from "@/components/ScrollToTop";
 import Dashboard from "@/pages/Dashboard";
 import Feedback from "@/pages/Feedback";
 import Tasks from "@/pages/Tasks";
@@ -30,7 +31,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <MobileLayout>
+          <ScrollToTop />
+          <AppLayout>
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -41,7 +43,7 @@ const App = () => (
               <Route path="/feedback-form" element={<ProtectedRoute><FeedbackForm /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </MobileLayout>
+          </AppLayout>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
