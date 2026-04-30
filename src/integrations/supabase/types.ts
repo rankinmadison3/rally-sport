@@ -135,36 +135,80 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_message_reads: {
+        Row: {
+          id: string
+          message_id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          message_id: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          message_id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_message_reads_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_messages: {
         Row: {
           content: string
+          conversation_id: string | null
           created_at: string
+          edited_at: string | null
           id: string
+          is_deleted: boolean
           is_group: boolean
+          message_type: string
           read_at: string | null
           recipient_id: string | null
           sender_id: string
-          team_id: string | null
+          team_id: string
+          updated_at: string
         }
         Insert: {
           content: string
+          conversation_id?: string | null
           created_at?: string
+          edited_at?: string | null
           id?: string
+          is_deleted?: boolean
           is_group?: boolean
+          message_type?: string
           read_at?: string | null
           recipient_id?: string | null
           sender_id: string
-          team_id?: string | null
+          team_id: string
+          updated_at?: string
         }
         Update: {
           content?: string
+          conversation_id?: string | null
           created_at?: string
+          edited_at?: string | null
           id?: string
+          is_deleted?: boolean
           is_group?: boolean
+          message_type?: string
           read_at?: string | null
           recipient_id?: string | null
           sender_id?: string
-          team_id?: string | null
+          team_id?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -548,6 +592,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_team_member: {
+        Args: { _team_id: string; _user_id: string }
         Returns: boolean
       }
     }
