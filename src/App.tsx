@@ -12,6 +12,7 @@ import Tasks from "@/pages/Tasks";
 import TeamCalendar from "@/pages/TeamCalendar";
 import Chat from "@/pages/Chat";
 import FeedbackForm from "@/pages/FeedbackForm";
+import Profile from "@/pages/Profile";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/NotFound";
 
