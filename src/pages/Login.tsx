@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Shield, ChevronRight, Loader2, Users, Trophy, Activity } from "lucide-react";
+import { ChevronRight, Loader2, Users, Trophy, Activity } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import logo from "@/assets/rally-sport-logo.png";
 import { toast } from "sonner";
 
 const Login = () => {
@@ -147,19 +148,12 @@ const Login = () => {
 
           {/* Logo + wordmark */}
           <div className="flex items-center gap-3 lg:flex-col lg:items-start lg:gap-4">
-            <div
-              className="w-11 h-11 lg:w-14 lg:h-14 rounded-2xl flex items-center justify-center flex-shrink-0"
-              style={{ background: "rgba(255,255,255,0.18)", border: "1.5px solid rgba(255,255,255,0.25)" }}
-            >
-              <Shield className="w-5 h-5 lg:w-7 lg:h-7 text-white" />
-            </div>
+            <img
+              src={logo}
+              alt="Rally Sport"
+              className="h-14 lg:h-20 w-auto object-contain flex-shrink-0"
+            />
             <div>
-              <h1
-                className="tp-display text-white leading-none tracking-tight"
-                style={{ fontSize: "clamp(1.6rem, 5vw, 3.2rem)", fontWeight: 800 }}
-              >
-                TeamPulse
-              </h1>
               <p className="text-white/60 hidden lg:block mt-1" style={{ fontSize: "15px", fontWeight: 500 }}>
                 Sports Team Management
               </p>
