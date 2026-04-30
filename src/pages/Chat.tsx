@@ -36,6 +36,7 @@ const Chat = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState("");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [outgoingReadSet, setOutgoingReadSet] = useState<Set<string>>(new Set());
 
   const bottomRef = useRef<HTMLDivElement>(null);
 
