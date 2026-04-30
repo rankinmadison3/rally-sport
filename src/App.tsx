@@ -13,6 +13,7 @@ import TeamCalendar from "@/pages/TeamCalendar";
 import Chat from "@/pages/Chat";
 import FeedbackForm from "@/pages/FeedbackForm";
 import Profile from "@/pages/Profile";
+import Reflections from "@/pages/Reflections";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/NotFound";
 
