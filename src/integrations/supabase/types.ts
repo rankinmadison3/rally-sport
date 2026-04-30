@@ -152,35 +152,102 @@ export type Database = {
           },
         ]
       }
+      feedback_form_assignments: {
+        Row: {
+          broadcast_at: string
+          broadcast_by: string
+          created_at: string
+          due_date: string | null
+          form_id: string
+          id: string
+          is_active: boolean
+          recurrence: string
+          team_id: string
+        }
+        Insert: {
+          broadcast_at?: string
+          broadcast_by: string
+          created_at?: string
+          due_date?: string | null
+          form_id: string
+          id?: string
+          is_active?: boolean
+          recurrence?: string
+          team_id: string
+        }
+        Update: {
+          broadcast_at?: string
+          broadcast_by?: string
+          created_at?: string
+          due_date?: string | null
+          form_id?: string
+          id?: string
+          is_active?: boolean
+          recurrence?: string
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_form_assignments_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "feedback_forms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feedback_form_responses: {
         Row: {
+          assignment_id: string | null
           created_at: string
+          form_id: string | null
           form_name: string
           id: string
           is_anonymous: boolean
           ratings: Json
           team_id: string
+          text_answers: Json
           user_id: string
         }
         Insert: {
+          assignment_id?: string | null
           created_at?: string
+          form_id?: string | null
           form_name?: string
           id?: string
           is_anonymous?: boolean
           ratings?: Json
           team_id: string
+          text_answers?: Json
           user_id: string
         }
         Update: {
+          assignment_id?: string | null
           created_at?: string
+          form_id?: string | null
           form_name?: string
           id?: string
           is_anonymous?: boolean
           ratings?: Json
           team_id?: string
+          text_answers?: Json
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "feedback_form_responses_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "feedback_form_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedback_form_responses_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "feedback_forms"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "feedback_form_responses_team_id_fkey"
             columns: ["team_id"]
@@ -189,6 +256,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      feedback_forms: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_system: boolean
+          is_template: boolean
+          name: string
+          questions: Json
+          team_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_system?: boolean
+          is_template?: boolean
+          name: string
+          questions?: Json
+          team_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_system?: boolean
+          is_template?: boolean
+          name?: string
+          questions?: Json
+          team_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       feedback_ratings: {
         Row: {

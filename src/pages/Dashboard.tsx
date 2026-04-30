@@ -11,7 +11,7 @@ const Dashboard = () => {
   const [wins, setWins] = useState(0);
   const [losses, setLosses] = useState(0);
   const [moraleData, setMoraleData] = useState<number[]>([]);
-  const [feedbackForms, setFeedbackForms] = useState<{ title: string; responses: number; total: number }[]>([]);
+  const [feedbackForms, setFeedbackForms] = useState<{ id: string; title: string; responses: number; total: number; assignmentId: string | null; myDone?: boolean }[]>([]);
   const [teamCode, setTeamCode] = useState("");
   const [teamName, setTeamName] = useState("");
   const [teamMembers, setTeamMembers] = useState<{ display_name: string; joined_at: string }[]>([]);
@@ -75,29 +75,63 @@ const Dashboard = () => {
         setMoraleData([30, 45, 40, 55, 60, 58, 72, 78, 75, 82, 85]); // fallback demo data
       }
 
-      // Fetch feedback form response counts
-      const { data: members } = await supabase
+      // Fetch active feedback form assignments + response counts
+      const { data: memberRows } = await supabase
         .from("team_members")
         .select("id")
         .eq("team_id", teamId);
-      const totalMembers = (members?.length || 0) + 1;
+      const totalMembers = (memberRows?.length || 0) + 1;
 
-      const forms = ["Post-Game Reflection", "Weekly Wellness Check", "Team Chemistry Survey"];
-      const formData = await Promise.all(
-        forms.map(async (title) => {
-          const { count } = await supabase
+      const { data: asgs } = await supabase
+        .from("feedback_form_assignments")
+        .select("id, form_id")
+        .eq("team_id", teamId)
+        .eq("is_active", true)
+        .order("broadcast_at", { ascending: false })
+        .limit(5);
+
+      if (asgs && asgs.length > 0) {
+        const formIds = Array.from(new Set(asgs.map((a) => a.form_id)));
+        const { data: forms } = await supabase
+          .from("feedback_forms")
+          .select("id, name")
+          .in("id", formIds);
+        const formMap = new Map((forms ?? []).map((f) => [f.id, f.name]));
+
+        let myDoneSet = new Set<string>();
+        if (role === "player" && user) {
+          const { data: myResponses } = await supabase
             .from("feedback_form_responses")
-            .select("id", { count: "exact", head: true })
-            .eq("team_id", teamId)
-            .eq("form_name", title);
-          return { title, responses: count || 0, total: totalMembers };
-        })
-      );
-      setFeedbackForms(formData);
+            .select("assignment_id")
+            .eq("user_id", user.id)
+            .in("assignment_id", asgs.map((a) => a.id));
+          myDoneSet = new Set((myResponses ?? []).map((r) => r.assignment_id).filter(Boolean) as string[]);
+        }
+
+        const formData = await Promise.all(
+          asgs.map(async (a) => {
+            const { count } = await supabase
+              .from("feedback_form_responses")
+              .select("id", { count: "exact", head: true })
+              .eq("assignment_id", a.id);
+            return {
+              id: a.form_id,
+              assignmentId: a.id,
+              title: formMap.get(a.form_id) ?? "Form",
+              responses: count || 0,
+              total: totalMembers,
+              myDone: myDoneSet.has(a.id),
+            };
+          })
+        );
+        setFeedbackForms(formData);
+      } else {
+        setFeedbackForms([]);
+      }
     };
 
     fetchData();
-  }, [teamId, role]);
+  }, [teamId, role, user]);
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(teamCode);
@@ -256,27 +290,47 @@ const Dashboard = () => {
 
       {/* Active Feedback Forms */}
       <div className="space-y-3">
-        <h2 className="font-display font-semibold text-foreground">Active Feedback Forms</h2>
-        {feedbackForms.map((form, i) => (
-          <div
-            key={i}
-            onClick={() => navigate(role === "player" ? "/feedback-form" : "/feedback")}
-            className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] flex items-center gap-3 cursor-pointer hover:bg-accent/50 transition-colors"
-          >
-            <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center shrink-0">
-              <FileText className="w-5 h-5 text-accent-foreground" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm text-card-foreground truncate">{form.title}</p>
-              <div className="flex items-center gap-2 mt-1">
-                <div className="flex-1 bg-muted rounded-full h-1.5">
-                  <div className="h-full bg-primary rounded-full" style={{ width: `${form.total > 0 ? (form.responses / form.total) * 100 : 0}%` }} />
+        <div className="flex items-center justify-between">
+          <h2 className="font-display font-semibold text-foreground">Active Feedback Forms</h2>
+          <button onClick={() => navigate("/feedback")} className="text-xs text-primary font-medium">View all</button>
+        </div>
+        {feedbackForms.length === 0 ? (
+          <div className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] text-sm text-muted-foreground text-center">
+            No active forms.
+          </div>
+        ) : (
+          feedbackForms.map((form) => (
+            <div
+              key={form.assignmentId ?? form.id}
+              onClick={() =>
+                navigate(
+                  role === "player" && form.assignmentId
+                    ? `/feedback-form?assignment=${form.assignmentId}`
+                    : "/feedback"
+                )
+              }
+              className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] flex items-center gap-3 cursor-pointer hover:bg-accent/50 transition-colors"
+            >
+              <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center shrink-0">
+                <FileText className="w-5 h-5 text-accent-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-sm text-card-foreground truncate">{form.title}</p>
+                  {role === "player" && form.myDone && (
+                    <span className="text-[10px] text-success font-medium shrink-0">✓ Done</span>
+                  )}
                 </div>
-                <span className="text-xs text-muted-foreground shrink-0">{form.responses}/{form.total}</span>
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="flex-1 bg-muted rounded-full h-1.5">
+                    <div className="h-full bg-primary rounded-full" style={{ width: `${form.total > 0 ? (form.responses / form.total) * 100 : 0}%` }} />
+                  </div>
+                  <span className="text-xs text-muted-foreground shrink-0">{form.responses}/{form.total}</span>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );
