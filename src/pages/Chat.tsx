@@ -152,15 +152,25 @@ const Chat = () => {
     const readsChannel = supabase
       .channel(`team-chat-reads-${user.id}`)
       .on("postgres_changes",
-        { event: "INSERT", schema: "public", table: "chat_message_reads", filter: `user_id=eq.${user.id}` },
+        { event: "INSERT", schema: "public", table: "chat_message_reads" },
         (payload) => {
-          const row = payload.new as { message_id: string };
-          setReadSet((prev) => {
-            if (prev.has(row.message_id)) return prev;
-            const next = new Set(prev);
-            next.add(row.message_id);
-            return next;
-          });
+          const row = payload.new as { message_id: string; user_id: string };
+          if (row.user_id === user.id) {
+            setReadSet((prev) => {
+              if (prev.has(row.message_id)) return prev;
+              const next = new Set(prev);
+              next.add(row.message_id);
+              return next;
+            });
+          } else {
+            // Someone read a message — if it was mine, mark outgoing as read
+            setOutgoingReadSet((prev) => {
+              if (prev.has(row.message_id)) return prev;
+              const next = new Set(prev);
+              next.add(row.message_id);
+              return next;
+            });
+          }
         }
       )
       .subscribe();
