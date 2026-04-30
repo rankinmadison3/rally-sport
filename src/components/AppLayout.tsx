@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import DesktopSidebar from "./DesktopSidebar";
-import DesktopHeader from "./DesktopHeader";
+
 import MobileBottomNav from "./MobileBottomNav";
 import logo from "@/assets/rally-sport-logo.png";
 
@@ -47,7 +47,7 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
 
       {/* Desktop shell */}
       <div className="hidden md:block md:pl-60 min-h-screen">
-        <DesktopHeader />
+        
         <main>
           <div className="mx-auto w-full max-w-7xl px-6 lg:px-8 py-6">
             {children}
