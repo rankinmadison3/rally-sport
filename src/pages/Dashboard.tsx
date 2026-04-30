@@ -282,10 +282,10 @@ const Dashboard = () => {
         <p className="text-xs text-muted-foreground text-center">Last {moraleData.length} check-ins</p>
       </div>
 
-      {/* Active Feedback Forms */}
+      {/* Active Feedback */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="font-display font-semibold text-foreground">Active Feedback Forms</h2>
+          <h2 className="font-display font-semibold text-foreground">Active Feedback</h2>
           <button onClick={() => navigate("/feedback")} className="text-xs text-primary font-medium">View all</button>
         </div>
         {feedbackForms.length === 0 ? (
