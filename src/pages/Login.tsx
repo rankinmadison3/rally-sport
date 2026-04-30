@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Shield, ChevronRight, Loader2, Users, Trophy, Activity } from "lucide-react";
+import { ChevronRight, Loader2, Users, Trophy, Activity } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import logo from "@/assets/rally-sport-logo.png";
 import { toast } from "sonner";
 
 const Login = () => {
