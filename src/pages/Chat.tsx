@@ -74,13 +74,26 @@ const Chat = () => {
         setGroupMessages(groups);
         setDirectMessages(dms);
 
-        // Read receipts: only need ids of incoming messages
+        // Read receipts: incoming (for unread/clearing) + outgoing DM ids (for ✓✓)
         const incomingIds = [
           ...groups.filter((m) => m.sender_id !== user.id).map((m) => m.id),
           ...dms.filter((m) => m.recipient_id === user.id).map((m) => m.id),
         ];
-        const reads = await getUserReadMessageIds(user.id, incomingIds);
-        if (!cancelled) setReadSet(reads);
+        const outgoingDmIds = dms.filter((m) => m.sender_id === user.id).map((m) => m.id);
+        const [reads, outgoing] = await Promise.all([
+          getUserReadMessageIds(user.id, incomingIds),
+          outgoingDmIds.length === 0
+            ? Promise.resolve([] as { message_id: string }[])
+            : supabase
+                .from("chat_message_reads")
+                .select("message_id")
+                .in("message_id", outgoingDmIds)
+                .then((r) => r.data ?? []),
+        ]);
+        if (!cancelled) {
+          setReadSet(reads);
+          setOutgoingReadSet(new Set(outgoing.map((r) => r.message_id)));
+        }
       } catch (err: any) {
         console.error(err);
         toast.error("Could not load messages.");
