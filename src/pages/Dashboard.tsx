@@ -11,7 +11,7 @@ const Dashboard = () => {
   const [wins, setWins] = useState(0);
   const [losses, setLosses] = useState(0);
   const [moraleData, setMoraleData] = useState<number[]>([]);
-  const [feedbackForms, setFeedbackForms] = useState<{ title: string; responses: number; total: number }[]>([]);
+  const [feedbackForms, setFeedbackForms] = useState<{ id: string; title: string; responses: number; total: number; assignmentId: string | null; myDone?: boolean }[]>([]);
   const [teamCode, setTeamCode] = useState("");
   const [teamName, setTeamName] = useState("");
   const [teamMembers, setTeamMembers] = useState<{ display_name: string; joined_at: string }[]>([]);
