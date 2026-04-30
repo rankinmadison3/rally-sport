@@ -1,380 +1,360 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { Send, Shield, Loader2, ArrowLeft, Users, Check, CheckCheck, Search } from "lucide-react";
+import {
+  Send, Shield, Loader2, ArrowLeft, Users, Check, CheckCheck, Search,
+  MoreVertical, Pencil, Trash2, X,
+} from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  ChatMessageRow, TeamMemberRow,
+  getTeamMembers, getGroupMessages, getAllDirectMessagesForUser,
+  sendGroupMessage, sendDirectMessage,
+  markMessagesAsRead, getUserReadMessageIds,
+  editMessage, softDeleteMessage,
+} from "@/services/chatService";
 
-interface ChatMessage {
-  id: string;
-  sender_id: string;
-  recipient_id: string | null;
-  content: string;
-  created_at: string;
-  is_group: boolean;
-  team_id: string | null;
-  read_at: string | null;
-}
-
-interface MemberProfile {
-  user_id: string;
-  name: string;
-  role: string;
-}
-
-type View = "list" | "group" | "dm";
+type Mode = "group" | "direct";
 
 const Chat = () => {
-  const { user, teamId } = useAuth();
-  const [view, setView] = useState<View>("list");
-  const [activeDmUser, setActiveDmUser] = useState<MemberProfile | null>(null);
+  const { user, teamId, role } = useAuth();
 
-  const [members, setMembers] = useState<MemberProfile[]>([]);
-  const [profiles, setProfiles] = useState<Record<string, MemberProfile>>({});
-  const [groupMessages, setGroupMessages] = useState<ChatMessage[]>([]);
-  const [dmMessages, setDmMessages] = useState<ChatMessage[]>([]);
-  const [allDms, setAllDms] = useState<ChatMessage[]>([]);
-  const [groupLastRead, setGroupLastRead] = useState<string | null>(null);
+  /* ---------- state ---------- */
+  const [activeMode, setActiveMode] = useState<Mode>("group");
+  const [selectedRecipientId, setSelectedRecipientId] = useState<string | null>(null);
+  const [mobileShowList, setMobileShowList] = useState(true); // mobile: list vs thread
 
-  const [newMessage, setNewMessage] = useState("");
+  const [teamMembers, setTeamMembers] = useState<TeamMemberRow[]>([]);
+  const [groupMessages, setGroupMessages] = useState<ChatMessageRow[]>([]);
+  const [directMessages, setDirectMessages] = useState<ChatMessageRow[]>([]);
+  const [readSet, setReadSet] = useState<Set<string>>(new Set());
+
+  const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [newMessage, setNewMessage] = useState("");
   const [search, setSearch] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState("");
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [outgoingReadSet, setOutgoingReadSet] = useState<Set<string>>(new Set());
+
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  /* ---------- Members + profile lookup ---------- */
+  const memberMap = useMemo(() => {
+    const m = new Map<string, TeamMemberRow>();
+    teamMembers.forEach((tm) => m.set(tm.user_id, tm));
+    return m;
+  }, [teamMembers]);
+
+  const otherMembers = useMemo(
+    () => teamMembers.filter((m) => m.user_id !== user?.id),
+    [teamMembers, user?.id]
+  );
+
+  const filteredMembers = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return otherMembers;
+    return otherMembers.filter((m) => m.display_name.toLowerCase().includes(q));
+  }, [otherMembers, search]);
+
+  /* ---------- initial load ---------- */
   useEffect(() => {
-    if (!teamId) return;
-    const load = async () => {
-      const { data: tm } = await supabase
-        .from("team_members")
-        .select("user_id")
-        .eq("team_id", teamId);
-      const ids = (tm ?? []).map((m) => m.user_id);
-      if (ids.length === 0) {
-        setMembers([]);
-        setProfiles({});
-        return;
-      }
-      const [{ data: profs }, { data: roles }] = await Promise.all([
-        supabase.from("profiles").select("user_id, display_name").in("user_id", ids),
-        supabase.from("user_roles").select("user_id, role").in("user_id", ids),
-      ]);
-      const map: Record<string, MemberProfile> = {};
-      (profs ?? []).forEach((p) => {
-        const r = roles?.find((x) => x.user_id === p.user_id);
-        map[p.user_id] = {
-          user_id: p.user_id,
-          name: p.display_name || "Unnamed",
-          role: r?.role ?? "player",
-        };
-      });
-      setProfiles(map);
-      setMembers(Object.values(map).filter((m) => m.user_id !== user?.id));
-    };
-    load();
-  }, [teamId, user?.id]);
-
-  /* ---------- Group messages ---------- */
-  const fetchGroup = useCallback(async () => {
-    if (!teamId) return;
-    const { data } = await supabase
-      .from("chat_messages")
-      .select("id, sender_id, recipient_id, content, created_at, is_group, team_id, read_at")
-      .eq("team_id", teamId)
-      .eq("is_group", true)
-      .order("created_at", { ascending: true })
-      .limit(200);
-    setGroupMessages((data as ChatMessage[]) ?? []);
-  }, [teamId]);
-
-  const fetchLastRead = useCallback(async () => {
     if (!teamId || !user) return;
-    const { data } = await supabase
-      .from("chat_last_read")
-      .select("last_read_at")
-      .eq("user_id", user.id)
-      .eq("team_id", teamId)
-      .maybeSingle();
-    setGroupLastRead(data?.last_read_at ?? null);
+    let cancelled = false;
+    setLoading(true);
+    (async () => {
+      try {
+        const [members, groups, dms] = await Promise.all([
+          getTeamMembers(teamId),
+          getGroupMessages(teamId),
+          getAllDirectMessagesForUser(teamId, user.id),
+        ]);
+        if (cancelled) return;
+        setTeamMembers(members);
+        setGroupMessages(groups);
+        setDirectMessages(dms);
+
+        // Read receipts: incoming (for unread/clearing) + outgoing DM ids (for ✓✓)
+        const incomingIds = [
+          ...groups.filter((m) => m.sender_id !== user.id).map((m) => m.id),
+          ...dms.filter((m) => m.recipient_id === user.id).map((m) => m.id),
+        ];
+        const outgoingDmIds = dms.filter((m) => m.sender_id === user.id).map((m) => m.id);
+        const [reads, outgoing] = await Promise.all([
+          getUserReadMessageIds(user.id, incomingIds),
+          outgoingDmIds.length === 0
+            ? Promise.resolve([] as { message_id: string }[])
+            : supabase
+                .from("chat_message_reads")
+                .select("message_id")
+                .in("message_id", outgoingDmIds)
+                .then((r) => r.data ?? []),
+        ]);
+        if (!cancelled) {
+          setReadSet(reads);
+          setOutgoingReadSet(new Set(outgoing.map((r) => r.message_id)));
+        }
+      } catch (err: any) {
+        console.error(err);
+        toast.error("Could not load messages.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [teamId, user?.id]);
 
-  /* ---------- All DMs (for inbox preview + active thread) ---------- */
-  const fetchAllDms = useCallback(async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from("chat_messages")
-      .select("id, sender_id, recipient_id, content, created_at, is_group, team_id, read_at")
-      .eq("is_group", false)
-      .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
-      .order("created_at", { ascending: true })
-      .limit(500);
-    setAllDms((data as ChatMessage[]) ?? []);
-  }, [user?.id]);
-
+  /* ---------- realtime ---------- */
   useEffect(() => {
-    fetchGroup();
-    fetchLastRead();
-    fetchAllDms();
-  }, [fetchGroup, fetchLastRead, fetchAllDms]);
+    if (!teamId || !user) return;
 
-  /* ---------- Realtime ---------- */
-  useEffect(() => {
-    if (!user || !teamId) return;
-    const channel = supabase
-      .channel(`chat-${teamId}-${user.id}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "chat_messages" },
+    const groupChannel = supabase
+      .channel(`team-group-chat-${teamId}`)
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "chat_messages", filter: `team_id=eq.${teamId}` },
         (payload) => {
-          const row = (payload.new ?? payload.old) as ChatMessage;
-          if (!row) return;
-
-          if (row.is_group && row.team_id === teamId) {
-            if (payload.eventType === "INSERT") {
-              setGroupMessages((prev) =>
-                prev.some((m) => m.id === row.id) ? prev : [...prev, row]
-              );
-            } else if (payload.eventType === "UPDATE") {
-              setGroupMessages((prev) => prev.map((m) => (m.id === row.id ? row : m)));
-            }
-          } else if (!row.is_group && (row.sender_id === user.id || row.recipient_id === user.id)) {
-            if (payload.eventType === "INSERT") {
-              setAllDms((prev) =>
-                prev.some((m) => m.id === row.id) ? prev : [...prev, row]
-              );
-            } else if (payload.eventType === "UPDATE") {
-              setAllDms((prev) => prev.map((m) => (m.id === row.id ? row : m)));
-            }
+          const row = (payload.new ?? payload.old) as ChatMessageRow;
+          if (!row || !row.is_group) return;
+          if (payload.eventType === "INSERT") {
+            setGroupMessages((prev) =>
+              prev.some((m) => m.id === row.id) ? prev : [...prev, row]
+            );
+          } else if (payload.eventType === "UPDATE") {
+            setGroupMessages((prev) => prev.map((m) => (m.id === row.id ? row : m)));
+          } else if (payload.eventType === "DELETE") {
+            setGroupMessages((prev) => prev.filter((m) => m.id !== row.id));
           }
         }
       )
       .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user?.id, teamId]);
 
-  /* ---------- Active DM thread ---------- */
-  useEffect(() => {
-    if (!activeDmUser || !user) {
-      setDmMessages([]);
-      return;
-    }
-    const thread = allDms
+    const dmChannel = supabase
+      .channel(`team-direct-chat-${teamId}-${user.id}`)
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "chat_messages", filter: `team_id=eq.${teamId}` },
+        (payload) => {
+          const row = (payload.new ?? payload.old) as ChatMessageRow;
+          if (!row || row.is_group) return;
+          if (row.sender_id !== user.id && row.recipient_id !== user.id) return;
+          if (payload.eventType === "INSERT") {
+            setDirectMessages((prev) =>
+              prev.some((m) => m.id === row.id) ? prev : [...prev, row]
+            );
+          } else if (payload.eventType === "UPDATE") {
+            setDirectMessages((prev) => prev.map((m) => (m.id === row.id ? row : m)));
+          } else if (payload.eventType === "DELETE") {
+            setDirectMessages((prev) => prev.filter((m) => m.id !== row.id));
+          }
+        }
+      )
+      .subscribe();
+
+    const readsChannel = supabase
+      .channel(`team-chat-reads-${user.id}`)
+      .on("postgres_changes",
+        { event: "INSERT", schema: "public", table: "chat_message_reads" },
+        (payload) => {
+          const row = payload.new as { message_id: string; user_id: string };
+          if (row.user_id === user.id) {
+            setReadSet((prev) => {
+              if (prev.has(row.message_id)) return prev;
+              const next = new Set(prev);
+              next.add(row.message_id);
+              return next;
+            });
+          } else {
+            // Someone read a message — if it was mine, mark outgoing as read
+            setOutgoingReadSet((prev) => {
+              if (prev.has(row.message_id)) return prev;
+              const next = new Set(prev);
+              next.add(row.message_id);
+              return next;
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(groupChannel);
+      supabase.removeChannel(dmChannel);
+      supabase.removeChannel(readsChannel);
+    };
+  }, [teamId, user?.id]);
+
+  /* ---------- thread for currently selected DM ---------- */
+  const activeThread = useMemo(() => {
+    if (activeMode === "group") return groupMessages;
+    if (!selectedRecipientId || !user) return [];
+    return directMessages
       .filter(
         (m) =>
-          (m.sender_id === user.id && m.recipient_id === activeDmUser.user_id) ||
-          (m.sender_id === activeDmUser.user_id && m.recipient_id === user.id)
+          (m.sender_id === user.id && m.recipient_id === selectedRecipientId) ||
+          (m.sender_id === selectedRecipientId && m.recipient_id === user.id)
       )
       .sort((a, b) => a.created_at.localeCompare(b.created_at));
-    setDmMessages(thread);
-  }, [activeDmUser, allDms, user?.id]);
+  }, [activeMode, groupMessages, directMessages, selectedRecipientId, user?.id]);
 
-  /* ---------- Mark read ---------- */
-  // DM: mark all incoming unread DMs from active partner as read
+  /* ---------- mark messages read on view ---------- */
   useEffect(() => {
-    if (!activeDmUser || !user || view !== "dm") return;
-    const unread = dmMessages.filter(
-      (m) => m.recipient_id === user.id && m.sender_id === activeDmUser.user_id && !m.read_at
+    if (!user) return;
+    const visible = activeThread.filter(
+      (m) =>
+        !m.is_deleted &&
+        m.sender_id !== user.id &&
+        (m.is_group || m.recipient_id === user.id) &&
+        !readSet.has(m.id)
     );
-    if (unread.length === 0) return;
-    const ids = unread.map((m) => m.id);
-    supabase
-      .from("chat_messages")
-      .update({ read_at: new Date().toISOString() })
-      .in("id", ids)
-      .then(({ error }) => {
-        if (error) console.error("mark read failed", error);
-      });
-  }, [activeDmUser?.user_id, user?.id, view, dmMessages]);
+    if (visible.length === 0) return;
+    const ids = visible.map((m) => m.id);
+    markMessagesAsRead(ids, user.id).catch((e) => console.error("read receipt failed", e));
+    // optimistic local
+    setReadSet((prev) => {
+      const next = new Set(prev);
+      ids.forEach((i) => next.add(i));
+      return next;
+    });
+  }, [activeThread, user?.id, readSet]);
 
-  // Group: bump last_read_at when entering group view
+  /* ---------- auto-scroll on new messages in active thread ---------- */
+  const lastLenRef = useRef(0);
   useEffect(() => {
-    if (view !== "group" || !user || !teamId) return;
-    const now = new Date().toISOString();
-    supabase
-      .from("chat_last_read")
-      .upsert(
-        { user_id: user.id, team_id: teamId, last_read_at: now },
-        { onConflict: "user_id,team_id" }
-      )
-      .then(({ error }) => {
-        if (!error) setGroupLastRead(now);
-      });
-  }, [view, user?.id, teamId, groupMessages.length]);
-
-  /* ---------- Scroll to bottom ---------- */
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [view, groupMessages.length, dmMessages.length]);
-
-  /* ---------- Sending ---------- */
-  const sendMessage = async () => {
-    const content = newMessage.trim();
-    if (!content || !user || sending) return;
-    if (view === "group" && !teamId) return;
-    if (view === "dm" && !activeDmUser) return;
-
-    setSending(true);
-    const payload =
-      view === "group"
-        ? {
-            sender_id: user.id,
-            team_id: teamId!,
-            is_group: true,
-            content,
-          }
-        : {
-            sender_id: user.id,
-            team_id: teamId,
-            is_group: false,
-            recipient_id: activeDmUser!.user_id,
-            content,
-          };
-
-    const { error } = await supabase.from("chat_messages").insert(payload);
-    setSending(false);
-    if (error) {
-      toast.error(error.message);
-      return;
+    if (activeThread.length !== lastLenRef.current) {
+      lastLenRef.current = activeThread.length;
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-    setNewMessage("");
-  };
+  }, [activeThread]);
 
-  /* ---------- Derived: DM inbox per partner ---------- */
-  const dmInbox = useMemo(() => {
-    if (!user) return [] as Array<{ partner: MemberProfile; last: ChatMessage; unread: number }>;
-    const byPartner = new Map<string, ChatMessage[]>();
-    allDms.forEach((m) => {
-      const partnerId = m.sender_id === user.id ? m.recipient_id! : m.sender_id;
-      if (!byPartner.has(partnerId)) byPartner.set(partnerId, []);
-      byPartner.get(partnerId)!.push(m);
+  /* ---------- unread counts ---------- */
+  const unreadByMember = useMemo(() => {
+    const map = new Map<string, number>();
+    if (!user) return map;
+    directMessages.forEach((m) => {
+      if (m.is_deleted) return;
+      if (m.recipient_id !== user.id) return;
+      if (readSet.has(m.id)) return;
+      map.set(m.sender_id, (map.get(m.sender_id) ?? 0) + 1);
     });
-    const rows: Array<{ partner: MemberProfile; last: ChatMessage; unread: number }> = [];
-    byPartner.forEach((msgs, pid) => {
-      const partner = profiles[pid];
-      if (!partner) return;
-      const sorted = msgs.sort((a, b) => a.created_at.localeCompare(b.created_at));
-      const last = sorted[sorted.length - 1];
-      const unread = sorted.filter(
-        (m) => m.recipient_id === user.id && !m.read_at
-      ).length;
-      rows.push({ partner, last, unread });
-    });
-    return rows.sort((a, b) => b.last.created_at.localeCompare(a.last.created_at));
-  }, [allDms, profiles, user?.id]);
+    return map;
+  }, [directMessages, readSet, user?.id]);
 
   const groupUnread = useMemo(() => {
     if (!user) return 0;
     return groupMessages.filter(
-      (m) => m.sender_id !== user.id && (!groupLastRead || m.created_at > groupLastRead)
+      (m) => !m.is_deleted && m.sender_id !== user.id && !readSet.has(m.id)
     ).length;
-  }, [groupMessages, groupLastRead, user?.id]);
+  }, [groupMessages, readSet, user?.id]);
 
-  const filteredMembers = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return members;
-    return members.filter((m) => m.name.toLowerCase().includes(q));
-  }, [members, search]);
+  /* ---------- sending ---------- */
+  const handleSend = async () => {
+    const content = newMessage.trim();
+    if (!content || !user || !teamId || sending) return;
+    if (activeMode === "direct" && !selectedRecipientId) return;
+    if (activeMode === "direct" && selectedRecipientId === user.id) return;
 
-  /* ---------- Renderers ---------- */
-  const renderMessage = (msg: ChatMessage, showSender = true) => {
-    const isMe = msg.sender_id === user?.id;
-    const profile = profiles[msg.sender_id] ?? { name: "Unknown", role: "player", user_id: msg.sender_id };
-    return (
-      <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
-        <div
-          className={`max-w-[80%] rounded-2xl px-3.5 py-2 ${
-            isMe ? "bg-primary text-primary-foreground" : "bg-card shadow-[var(--card-shadow)]"
-          }`}
-        >
-          {!isMe && showSender && (
-            <div className="flex items-center gap-1.5 mb-0.5">
-              <span className="text-xs font-semibold text-card-foreground">{profile.name}</span>
-              {(profile.role === "coach" || profile.role === "manager") && (
-                <span className="flex items-center gap-0.5 px-1 py-0.5 rounded text-[8px] font-bold bg-primary text-primary-foreground uppercase">
-                  <Shield className="w-2 h-2" /> {profile.role}
-                </span>
-              )}
-            </div>
-          )}
-          <p className={`text-sm whitespace-pre-wrap break-words ${isMe ? "" : "text-card-foreground"}`}>
-            {msg.content}
-          </p>
-          <div className={`flex items-center justify-end gap-1 mt-0.5 ${isMe ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-            <span className="text-[10px]">
-              {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-            </span>
-            {isMe && !msg.is_group && (
-              msg.read_at
-                ? <CheckCheck className="w-3 h-3" />
-                : <Check className="w-3 h-3" />
-            )}
-          </div>
-        </div>
-      </div>
-    );
+    setSending(true);
+    try {
+      if (activeMode === "group") {
+        await sendGroupMessage(teamId, user.id, content);
+      } else {
+        await sendDirectMessage(teamId, user.id, selectedRecipientId!, content);
+      }
+      setNewMessage("");
+      // ensure scroll
+      requestAnimationFrame(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }));
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Failed to send");
+    } finally {
+      setSending(false);
+    }
   };
 
-  /* ---------- Header ---------- */
-  const header = (
-    <div className="flex items-center gap-3">
-      {view !== "list" && (
-        <button
-          onClick={() => {
-            setView("list");
-            setActiveDmUser(null);
-          }}
-          className="p-1.5 -ml-1.5 rounded-lg hover:bg-muted transition-colors"
-          aria-label="Back"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-      )}
-      <div className="flex-1 min-w-0">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Messages</p>
-        <h1 className="text-2xl font-bold font-display text-foreground truncate">
-          {view === "list" && "Chat"}
-          {view === "group" && "Team Chat"}
-          {view === "dm" && (activeDmUser?.name ?? "Direct Message")}
-        </h1>
-      </div>
-    </div>
-  );
+  /* ---------- edit / delete ---------- */
+  const startEdit = (m: ChatMessageRow) => {
+    setOpenMenuId(null);
+    setEditingId(m.id);
+    setEditingValue(m.content);
+  };
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditingValue("");
+  };
+  const saveEdit = async () => {
+    if (!editingId) return;
+    const value = editingValue.trim();
+    if (!value) return;
+    try {
+      await editMessage(editingId, value);
+      cancelEdit();
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to edit");
+    }
+  };
+  const handleDelete = async (id: string) => {
+    setOpenMenuId(null);
+    if (!confirm("Delete this message?")) return;
+    try {
+      await softDeleteMessage(id);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to delete");
+    }
+  };
 
-  /* ---------- Empty team state ---------- */
+  /* ---------- selecting / switching ---------- */
+  const openGroup = () => {
+    setActiveMode("group");
+    setSelectedRecipientId(null);
+    setMobileShowList(false);
+  };
+  const openDm = (memberId: string) => {
+    setActiveMode("direct");
+    setSelectedRecipientId(memberId);
+    setMobileShowList(false);
+  };
+  const backToList = () => {
+    setMobileShowList(true);
+  };
+
+  /* ---------- guards ---------- */
   if (!teamId) {
     return (
       <div className="p-4 space-y-4">
-        {header}
+        <Header title="Chat" />
         <div className="bg-card rounded-xl p-6 text-center text-sm text-muted-foreground shadow-[var(--card-shadow)]">
-          Join or create a team to start chatting.
+          Join or create a team to use chat.
         </div>
       </div>
     );
   }
 
-  /* ---------- LIST VIEW ---------- */
-  if (view === "list") {
-    return (
-      <div className="p-4 space-y-4 pb-32">
-        {header}
-
-        {/* Group chat row */}
+  /* ---------- panes ---------- */
+  const ListPane = (
+    <div className="flex flex-col h-full bg-card md:bg-background border-r border-border">
+      <div className="p-3 border-b border-border">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Messages</p>
+        <h2 className="text-lg font-display font-semibold text-foreground">Conversations</h2>
+      </div>
+      <div className="flex-1 overflow-y-auto p-2 space-y-1">
         <button
-          onClick={() => setView("group")}
-          className="w-full flex items-center gap-3 p-3 rounded-xl bg-card shadow-[var(--card-shadow)] hover:shadow-[var(--card-shadow-hover)] transition-shadow text-left"
+          onClick={openGroup}
+          className={`w-full flex items-center gap-3 p-2.5 rounded-lg text-left transition-colors ${
+            activeMode === "group" && !mobileShowList ? "bg-primary/10" : "hover:bg-muted"
+          }`}
         >
-          <div className="w-11 h-11 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
             <Users className="w-5 h-5" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-card-foreground">Team Chat</p>
+            <p className="text-sm font-semibold text-foreground">Team Chat</p>
             <p className="text-xs text-muted-foreground truncate">
               {groupMessages.length === 0
                 ? "No messages yet"
-                : `${profiles[groupMessages[groupMessages.length - 1].sender_id]?.name ?? "Someone"}: ${
-                    groupMessages[groupMessages.length - 1].content
-                  }`}
+                : (() => {
+                    const last = groupMessages[groupMessages.length - 1];
+                    const sender = memberMap.get(last.sender_id)?.display_name ?? "Someone";
+                    return `${sender}: ${last.is_deleted ? "Message deleted" : last.content}`;
+                  })()}
             </p>
           </div>
           {groupUnread > 0 && (
@@ -384,100 +364,223 @@ const Chat = () => {
           )}
         </button>
 
-        {/* DM inbox */}
-        {dmInbox.length > 0 && (
-          <div className="space-y-1">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-1">Direct Messages</p>
-            {dmInbox.map(({ partner, last, unread }) => (
-              <button
-                key={partner.user_id}
-                onClick={() => {
-                  setActiveDmUser(partner);
-                  setView("dm");
-                }}
-                className="w-full flex items-center gap-3 p-3 rounded-xl bg-card shadow-[var(--card-shadow)] hover:shadow-[var(--card-shadow-hover)] transition-shadow text-left"
-              >
-                <div className="w-11 h-11 rounded-full bg-muted text-foreground flex items-center justify-center shrink-0 font-semibold">
-                  {partner.name.charAt(0).toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <p className="text-sm font-semibold text-card-foreground truncate">{partner.name}</p>
-                    {(partner.role === "coach" || partner.role === "manager") && (
-                      <Shield className="w-3 h-3 text-primary shrink-0" />
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {last.sender_id === user?.id ? "You: " : ""}
-                    {last.content}
-                  </p>
-                </div>
-                {unread > 0 && (
-                  <span className="ml-2 px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
-                    {unread}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="pt-3 px-2 pb-1">
+          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Direct Messages</p>
+        </div>
 
-        {/* New conversation: team member directory */}
-        <div className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-1">Team Members</p>
+        <div className="px-1 pb-1">
           <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search members…"
-              className="w-full pl-9 pr-3 py-2 text-sm bg-card border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary"
+              placeholder="Search teammates…"
+              className="w-full pl-8 pr-2 py-1.5 text-sm bg-muted border border-transparent rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
-          {filteredMembers.length === 0 && (
-            <p className="text-xs text-muted-foreground px-1 py-4 text-center">
-              {members.length === 0 ? "No teammates yet." : "No matches."}
-            </p>
-          )}
-          {filteredMembers.map((m) => (
+        </div>
+
+        {filteredMembers.length === 0 && (
+          <p className="text-xs text-muted-foreground text-center py-6">
+            {otherMembers.length === 0 ? "No teammates found yet." : "No matches."}
+          </p>
+        )}
+
+        {filteredMembers.map((m) => {
+          const unread = unreadByMember.get(m.user_id) ?? 0;
+          const isSelected = activeMode === "direct" && selectedRecipientId === m.user_id && !mobileShowList;
+          return (
             <button
               key={m.user_id}
-              onClick={() => {
-                setActiveDmUser(m);
-                setView("dm");
-              }}
-              className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted transition-colors text-left"
+              onClick={() => openDm(m.user_id)}
+              className={`w-full flex items-center gap-3 p-2.5 rounded-lg text-left transition-colors ${
+                isSelected ? "bg-primary/10" : "hover:bg-muted"
+              }`}
             >
-              <div className="w-9 h-9 rounded-full bg-muted text-foreground flex items-center justify-center shrink-0 text-sm font-semibold">
-                {m.name.charAt(0).toUpperCase()}
+              <div className="w-10 h-10 rounded-full bg-muted text-foreground flex items-center justify-center shrink-0 text-sm font-semibold">
+                {m.display_name.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">{m.name}</p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-sm font-semibold text-foreground truncate">{m.display_name}</p>
+                  {(m.role === "coach" || m.role === "manager") && (
+                    <Shield className="w-3 h-3 text-primary shrink-0" />
+                  )}
+                </div>
                 <p className="text-[11px] text-muted-foreground capitalize">{m.role}</p>
               </div>
+              {unread > 0 && (
+                <span className="ml-2 px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+                  {unread}
+                </span>
+              )}
             </button>
-          ))}
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const ThreadHeader = () => {
+    if (activeMode === "group") {
+      return (
+        <div className="flex items-center gap-3">
+          <button onClick={backToList} className="md:hidden p-1.5 -ml-1.5 rounded-lg hover:bg-muted" aria-label="Back">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div className="w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+            <Users className="w-4 h-4" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-foreground">Team Chat</p>
+            <p className="text-xs text-muted-foreground">{teamMembers.length} member{teamMembers.length === 1 ? "" : "s"}</p>
+          </div>
+        </div>
+      );
+    }
+    const partner = selectedRecipientId ? memberMap.get(selectedRecipientId) : null;
+    return (
+      <div className="flex items-center gap-3">
+        <button onClick={backToList} className="md:hidden p-1.5 -ml-1.5 rounded-lg hover:bg-muted" aria-label="Back">
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <div className="w-9 h-9 rounded-full bg-muted text-foreground flex items-center justify-center text-sm font-semibold">
+          {partner?.display_name.charAt(0).toUpperCase() ?? "?"}
+        </div>
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5">
+            <p className="text-sm font-semibold text-foreground truncate">{partner?.display_name ?? "Unknown"}</p>
+            {partner && (partner.role === "coach" || partner.role === "manager") && (
+              <Shield className="w-3 h-3 text-primary" />
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground capitalize">{partner?.role}</p>
         </div>
       </div>
     );
-  }
+  };
 
-  /* ---------- THREAD VIEW (group or DM) ---------- */
-  const messages = view === "group" ? groupMessages : dmMessages;
+  const renderMessage = (msg: ChatMessageRow) => {
+    const isMe = msg.sender_id === user?.id;
+    const profile = memberMap.get(msg.sender_id);
+    const name = profile?.display_name ?? "Unknown";
+    const isEditing = editingId === msg.id;
 
-  return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] md:h-[calc(100vh-3rem)]">
-      <div className="p-4 border-b border-border bg-background">
-        {header}
+    return (
+      <div key={msg.id} className={`group/msg flex ${isMe ? "justify-end" : "justify-start"}`}>
+        <div className="max-w-[80%] flex items-start gap-1">
+          {isMe && !msg.is_deleted && !isEditing && (
+            <div className="relative self-center">
+              <button
+                onClick={() => setOpenMenuId((id) => (id === msg.id ? null : msg.id))}
+                className="p-1 rounded hover:bg-muted opacity-0 group-hover/msg:opacity-100 transition-opacity"
+                aria-label="Message actions"
+              >
+                <MoreVertical className="w-3.5 h-3.5 text-muted-foreground" />
+              </button>
+              {openMenuId === msg.id && (
+                <div className="absolute right-full top-0 mr-1 z-10 bg-popover border border-border rounded-lg shadow-lg py-1 min-w-[120px]">
+                  <button
+                    onClick={() => startEdit(msg)}
+                    className="w-full text-left px-3 py-1.5 text-xs hover:bg-muted flex items-center gap-2"
+                  >
+                    <Pencil className="w-3 h-3" /> Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(msg.id)}
+                    className="w-full text-left px-3 py-1.5 text-xs hover:bg-muted flex items-center gap-2 text-destructive"
+                  >
+                    <Trash2 className="w-3 h-3" /> Delete
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div
+            className={`rounded-2xl px-3.5 py-2 ${
+              msg.is_deleted
+                ? "bg-muted text-muted-foreground italic"
+                : isMe
+                ? "bg-primary text-primary-foreground"
+                : "bg-card shadow-[var(--card-shadow)]"
+            }`}
+          >
+            {!isMe && msg.is_group && !msg.is_deleted && (
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <span className="text-xs font-semibold text-card-foreground">{name}</span>
+                {profile && (profile.role === "coach" || profile.role === "manager") && (
+                  <span className="flex items-center gap-0.5 px-1 py-0.5 rounded text-[8px] font-bold bg-primary text-primary-foreground uppercase">
+                    <Shield className="w-2 h-2" /> {profile.role}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {msg.is_deleted ? (
+              <p className="text-sm">Message deleted</p>
+            ) : isEditing ? (
+              <div className="space-y-1.5">
+                <textarea
+                  value={editingValue}
+                  onChange={(e) => setEditingValue(e.target.value)}
+                  rows={2}
+                  className="w-full text-sm rounded-md p-1.5 text-foreground bg-background border border-border resize-none"
+                />
+                <div className="flex gap-1.5">
+                  <button onClick={saveEdit} className="px-2 py-0.5 rounded bg-background text-primary text-xs font-medium">
+                    Save
+                  </button>
+                  <button onClick={cancelEdit} className="px-2 py-0.5 rounded bg-background/30 text-xs">
+                    <X className="w-3 h-3 inline" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p className={`text-sm whitespace-pre-wrap break-words ${isMe ? "" : "text-card-foreground"}`}>
+                {msg.content}
+              </p>
+            )}
+
+            {!msg.is_deleted && !isEditing && (
+              <div className={`flex items-center justify-end gap-1 mt-0.5 ${isMe ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                {msg.edited_at && <span className="text-[10px] italic">edited</span>}
+                <span className="text-[10px]">
+                  {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                </span>
+                {isMe && !msg.is_group && (
+                  outgoingReadSet.has(msg.id)
+                    ? <CheckCheck className="w-3 h-3" />
+                    : <Check className="w-3 h-3" />
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const ThreadPane = (
+    <div className="flex flex-col h-full">
+      <div className="p-3 border-b border-border bg-background sticky top-0 z-10">
+        <ThreadHeader />
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
-        {messages.length === 0 && (
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : activeThread.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-12">
-            {view === "group" ? "No team messages yet. Start the conversation!" : "Say hi 👋"}
+            {activeMode === "group"
+              ? "No team messages yet. Start the conversation."
+              : "No messages with this teammate yet."}
           </p>
+        ) : (
+          activeThread.map(renderMessage)
         )}
-        {messages.map((m) => renderMessage(m, view === "group"))}
         <div ref={bottomRef} />
       </div>
 
@@ -489,17 +592,22 @@ const Chat = () => {
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
-                sendMessage();
+                handleSend();
               }
             }}
-            placeholder={view === "group" ? "Message the team…" : `Message ${activeDmUser?.name ?? ""}…`}
+            placeholder={
+              activeMode === "group"
+                ? "Message the team…"
+                : `Message ${selectedRecipientId ? memberMap.get(selectedRecipientId)?.display_name ?? "" : ""}…`
+            }
             rows={1}
             maxLength={1000}
-            className="flex-1 px-3 py-2 text-sm bg-background border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none max-h-32"
+            disabled={activeMode === "direct" && !selectedRecipientId}
+            className="flex-1 px-3 py-2 text-sm bg-background border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none max-h-32 disabled:opacity-50"
           />
           <button
-            onClick={sendMessage}
-            disabled={sending || !newMessage.trim()}
+            onClick={handleSend}
+            disabled={sending || !newMessage.trim() || (activeMode === "direct" && !selectedRecipientId)}
             className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shrink-0 disabled:opacity-50 hover:opacity-90 transition-opacity"
             aria-label="Send"
           >
@@ -513,6 +621,26 @@ const Chat = () => {
       </div>
     </div>
   );
+
+  /* ---------- layout ---------- */
+  return (
+    <div className="md:h-[calc(100vh-3rem)] h-[calc(100vh-9rem)] flex flex-col md:flex-row md:gap-0 -m-4 md:-m-6 md:-my-6">
+      {/* Desktop: split. Mobile: list OR thread. */}
+      <div className={`md:w-72 md:shrink-0 md:border-r md:border-border ${mobileShowList ? "block" : "hidden"} md:block flex-1 md:flex-none min-h-0`}>
+        {ListPane}
+      </div>
+      <div className={`flex-1 min-h-0 ${mobileShowList ? "hidden" : "block"} md:block`}>
+        {ThreadPane}
+      </div>
+    </div>
+  );
 };
+
+const Header = ({ title }: { title: string }) => (
+  <div>
+    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Messages</p>
+    <h1 className="text-2xl font-bold font-display text-foreground">{title}</h1>
+  </div>
+);
 
 export default Chat;
