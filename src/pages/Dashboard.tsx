@@ -166,8 +166,12 @@ const Dashboard = () => {
           </p>
           <h1 className="text-2xl font-bold font-display text-foreground">Dashboard</h1>
         </div>
-        <button onClick={signOut} className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-          <LogOut className="w-5 h-5 text-muted-foreground" />
+        <button
+          onClick={() => navigate("/profile")}
+          aria-label="Open profile"
+          className="w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold font-display flex items-center justify-center shadow-md transition-all hover:opacity-90 hover:scale-105"
+        >
+          {(user?.email ?? "C").charAt(0).toUpperCase()}
         </button>
       </div>
 
