@@ -18,6 +18,22 @@ export interface FeedbackFormDef {
   created_by: string | null;
 }
 
+export type FeedbackAssignmentStatus = "pending" | "submitted";
+
+export interface FeedbackAssignment {
+  id: string;
+  form_id: string;
+  team_id: string;
+  player_id: string | null;
+  due_date: string | null;
+  recurrence: string;
+  broadcast_at: string;
+  broadcast_by: string;
+  is_active: boolean;
+  status: FeedbackAssignmentStatus;
+  submitted_at: string | null;
+}
+
 export const newQuestion = (type: FeedbackQuestionType): FeedbackQuestion => ({
   id: crypto.randomUUID(),
   type,
