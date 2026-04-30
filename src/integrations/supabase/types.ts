@@ -114,12 +114,34 @@ export type Database = {
           },
         ]
       }
+      chat_last_read: {
+        Row: {
+          id: string
+          last_read_at: string
+          team_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          last_read_at?: string
+          team_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          last_read_at?: string
+          team_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           content: string
           created_at: string
           id: string
           is_group: boolean
+          read_at: string | null
           recipient_id: string | null
           sender_id: string
           team_id: string | null
@@ -129,6 +151,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_group?: boolean
+          read_at?: string | null
           recipient_id?: string | null
           sender_id: string
           team_id?: string | null
@@ -138,6 +161,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_group?: boolean
+          read_at?: string | null
           recipient_id?: string | null
           sender_id?: string
           team_id?: string | null
