@@ -12,6 +12,7 @@ import Tasks from "@/pages/Tasks";
 import TeamCalendar from "@/pages/TeamCalendar";
 import Chat from "@/pages/Chat";
 import FeedbackForm from "@/pages/FeedbackForm";
+import Profile from "@/pages/Profile";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/NotFound";
 
@@ -41,6 +42,7 @@ const App = () => (
               <Route path="/calendar" element={<ProtectedRoute><TeamCalendar /></ProtectedRoute>} />
               <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
               <Route path="/feedback-form" element={<ProtectedRoute><FeedbackForm /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AppLayout>

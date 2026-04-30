@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { TrendingUp, FileText, Users, Trophy, LogOut, Copy, Check, Pencil, ChevronDown, ChevronUp, ClipboardCheck, ChevronRight } from "lucide-react";
+import { TrendingUp, FileText, Users, Trophy, Copy, Check, Pencil, ChevronDown, ChevronUp, ClipboardCheck, ChevronRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const Dashboard = () => {
-  const { user, role, teamId, signOut } = useAuth();
+  const { user, role, teamId } = useAuth();
   const navigate = useNavigate();
   const [wins, setWins] = useState(0);
   const [losses, setLosses] = useState(0);
@@ -166,8 +166,12 @@ const Dashboard = () => {
           </p>
           <h1 className="text-2xl font-bold font-display text-foreground">Dashboard</h1>
         </div>
-        <button onClick={signOut} className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-          <LogOut className="w-5 h-5 text-muted-foreground" />
+        <button
+          onClick={() => navigate("/profile")}
+          aria-label="Open profile"
+          className="w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold font-display flex items-center justify-center shadow-md transition-all hover:opacity-90 hover:scale-105"
+        >
+          {(user?.email ?? "C").charAt(0).toUpperCase()}
         </button>
       </div>
 
