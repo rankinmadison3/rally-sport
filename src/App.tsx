@@ -43,6 +43,9 @@ const App = () => (
               <Route path="/calendar" element={<ProtectedRoute><TeamCalendar /></ProtectedRoute>} />
               <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
               <Route path="/feedback-form" element={<ProtectedRoute><FeedbackForm /></ProtectedRoute>} />
+              <Route path="/feedback/assignment/:assignmentId" element={<ProtectedRoute><FeedbackForm /></ProtectedRoute>} />
+              <Route path="/feedback/form/:formId" element={<ProtectedRoute><FeedbackForm /></ProtectedRoute>} />
+              <Route path="/reflections" element={<ProtectedRoute><Reflections /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
