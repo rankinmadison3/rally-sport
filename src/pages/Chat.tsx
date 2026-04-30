@@ -525,9 +525,9 @@ const Chat = () => {
                   {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                 </span>
                 {isMe && !msg.is_group && (
-                  readSet /* sender doesn't know recipient's reads — use simple check via separate logic if needed */
-                    ? <Check className="w-3 h-3" />
-                    : <CheckCheck className="w-3 h-3" />
+                  outgoingReadSet.has(msg.id)
+                    ? <CheckCheck className="w-3 h-3" />
+                    : <Check className="w-3 h-3" />
                 )}
               </div>
             )}
