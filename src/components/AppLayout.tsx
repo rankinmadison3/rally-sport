@@ -2,7 +2,7 @@ import { ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import DesktopSidebar from "./DesktopSidebar";
-import DesktopHeader from "./DesktopHeader";
+
 import MobileBottomNav from "./MobileBottomNav";
 import logo from "@/assets/rally-sport-logo.png";
 
