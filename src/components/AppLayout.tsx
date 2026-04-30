@@ -47,9 +47,8 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
 
       {/* Desktop shell */}
       <div className="hidden md:block md:pl-60 min-h-screen">
-        
         <main>
-          <div className="mx-auto w-full max-w-7xl px-6 lg:px-8 py-6">
+          <div className="w-full px-6 lg:px-8 py-6">
             {children}
           </div>
         </main>
