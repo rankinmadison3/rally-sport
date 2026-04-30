@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Send, Loader2, Plus, FileText, Calendar as CalendarIcon, Repeat, Users, ChevronRight, Trash2, Pencil } from "lucide-react";
+import {
+  Send, Loader2, Plus, FileText, Calendar as CalendarIcon, Repeat, Users,
+  ChevronRight, Trash2, Pencil, ChevronDown, CheckCircle2, Clock,
+} from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -13,182 +16,210 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import FormBuilder from "@/components/feedback/FormBuilder";
 import { FeedbackFormDef, FeedbackQuestion } from "@/lib/feedbackForms";
 
-const moods = [
-  { emoji: "😫", label: "Struggling", value: 1 },
-  { emoji: "😟", label: "Low", value: 2 },
-  { emoji: "😐", label: "Okay", value: 3 },
-  { emoji: "😊", label: "Good", value: 4 },
-  { emoji: "🔥", label: "Great", value: 5 },
-];
-
 interface AssignmentRow {
   id: string;
   form_id: string;
   team_id: string;
+  player_id: string | null;
   due_date: string | null;
   recurrence: string;
   broadcast_at: string;
+  status: "pending" | "submitted";
+  submitted_at: string | null;
   is_active: boolean;
+}
+
+interface BroadcastGroup {
+  key: string; // form_id + broadcast_at
   form?: FeedbackFormDef;
-  responseCount?: number;
-  totalMembers?: number;
-  myDone?: boolean;
+  form_id: string;
+  broadcast_at: string;
+  due_date: string | null;
+  recurrence: string;
+  total: number;
+  submitted: number;
+  assignments: (AssignmentRow & { playerName?: string })[];
+}
+
+interface PlayerAssignmentRow extends AssignmentRow {
+  form?: FeedbackFormDef;
 }
 
 const Feedback = () => {
   const { user, role, teamId } = useAuth();
   const navigate = useNavigate();
-
-  // Player wellness state
-  const [selectedMood, setSelectedMood] = useState(3);
-  const [suggestion, setSuggestion] = useState("");
-  const [anonymous, setAnonymous] = useState(true);
-  const [sendingMood, setSendingMood] = useState(false);
-  const [sendingSuggestion, setSendingSuggestion] = useState(false);
+  const isCoachOrManager = role === "coach" || role === "manager";
 
   // Coach state
   const [templates, setTemplates] = useState<FeedbackFormDef[]>([]);
   const [myForms, setMyForms] = useState<FeedbackFormDef[]>([]);
-  const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
-  const [loadingCoach, setLoadingCoach] = useState(false);
+  const [broadcasts, setBroadcasts] = useState<BroadcastGroup[]>([]);
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  // Dialogs
+  // Player state
+  const [playerAssignments, setPlayerAssignments] = useState<PlayerAssignmentRow[]>([]);
+
+  // Builder dialog
   const [builderOpen, setBuilderOpen] = useState(false);
   const [builderTemplateId, setBuilderTemplateId] = useState<string | null>(null);
   const [builderEditId, setBuilderEditId] = useState<string | null>(null);
 
+  // Broadcast dialog
   const [broadcastForm, setBroadcastForm] = useState<FeedbackFormDef | null>(null);
   const [broadcastDue, setBroadcastDue] = useState("");
   const [broadcastRecurrence, setBroadcastRecurrence] = useState("none");
   const [broadcasting, setBroadcasting] = useState(false);
 
-  const isCoachOrManager = role === "coach" || role === "manager";
-
   const loadCoachData = async () => {
     if (!teamId) return;
-    setLoadingCoach(true);
+    setLoading(true);
 
-    const [tmplRes, myRes, asgRes, memRes] = await Promise.all([
+    const [tmplRes, myRes, asgRes] = await Promise.all([
       supabase.from("feedback_forms").select("*").eq("is_system", true).order("name"),
       supabase.from("feedback_forms").select("*").eq("team_id", teamId).eq("is_system", false).order("created_at", { ascending: false }),
       supabase.from("feedback_form_assignments").select("*").eq("team_id", teamId).eq("is_active", true).order("broadcast_at", { ascending: false }),
-      supabase.from("team_members").select("id", { count: "exact" }).eq("team_id", teamId),
     ]);
 
     setTemplates((tmplRes.data ?? []) as unknown as FeedbackFormDef[]);
     setMyForms((myRes.data ?? []) as unknown as FeedbackFormDef[]);
 
     const asgRows = (asgRes.data ?? []) as AssignmentRow[];
-    const totalMembers = (memRes.count ?? 0) + 1;
 
-    if (asgRows.length > 0) {
-      const formIds = Array.from(new Set(asgRows.map((a) => a.form_id)));
-      const { data: forms } = await supabase.from("feedback_forms").select("*").in("id", formIds);
-      const formMap = new Map((forms ?? []).map((f) => [f.id, f as unknown as FeedbackFormDef]));
-
-      const enriched = await Promise.all(
-        asgRows.map(async (a) => {
-          const { count } = await supabase
-            .from("feedback_form_responses")
-            .select("id", { count: "exact", head: true })
-            .eq("assignment_id", a.id);
-          return { ...a, form: formMap.get(a.form_id), responseCount: count ?? 0, totalMembers };
-        })
-      );
-      setAssignments(enriched);
-    } else {
-      setAssignments([]);
+    if (asgRows.length === 0) {
+      setBroadcasts([]);
+      setLoading(false);
+      return;
     }
-    setLoadingCoach(false);
+
+    // Fetch related forms + player profiles
+    const formIds = Array.from(new Set(asgRows.map((a) => a.form_id)));
+    const playerIds = Array.from(new Set(asgRows.map((a) => a.player_id).filter(Boolean) as string[]));
+
+    const [formsRes, profilesRes] = await Promise.all([
+      supabase.from("feedback_forms").select("*").in("id", formIds),
+      playerIds.length
+        ? supabase.from("profiles").select("user_id, display_name").in("user_id", playerIds)
+        : Promise.resolve({ data: [] as { user_id: string; display_name: string }[] }),
+    ]);
+
+    const formMap = new Map((formsRes.data ?? []).map((f) => [f.id, f as unknown as FeedbackFormDef]));
+    const nameMap = new Map((profilesRes.data ?? []).map((p) => [p.user_id, p.display_name]));
+
+    // Group by form_id + broadcast_at
+    const groups = new Map<string, BroadcastGroup>();
+    for (const a of asgRows) {
+      const key = `${a.form_id}|${a.broadcast_at}`;
+      let g = groups.get(key);
+      if (!g) {
+        g = {
+          key,
+          form: formMap.get(a.form_id),
+          form_id: a.form_id,
+          broadcast_at: a.broadcast_at,
+          due_date: a.due_date,
+          recurrence: a.recurrence,
+          total: 0,
+          submitted: 0,
+          assignments: [],
+        };
+        groups.set(key, g);
+      }
+      g.total += 1;
+      if (a.status === "submitted") g.submitted += 1;
+      g.assignments.push({ ...a, playerName: a.player_id ? nameMap.get(a.player_id) ?? "Player" : "Player" });
+    }
+
+    setBroadcasts(Array.from(groups.values()).sort((a, b) => b.broadcast_at.localeCompare(a.broadcast_at)));
+    setLoading(false);
   };
 
-  const loadPlayerAssignments = async () => {
+  const loadPlayerData = async () => {
     if (!teamId || !user) return;
-    setLoadingCoach(true);
+    setLoading(true);
+
     const { data: asgRes } = await supabase
       .from("feedback_form_assignments")
       .select("*")
       .eq("team_id", teamId)
+      .eq("player_id", user.id)
       .eq("is_active", true)
       .order("broadcast_at", { ascending: false });
 
     const asgRows = (asgRes ?? []) as AssignmentRow[];
     if (asgRows.length === 0) {
-      setAssignments([]);
-      setLoadingCoach(false);
+      setPlayerAssignments([]);
+      setLoading(false);
       return;
     }
     const formIds = Array.from(new Set(asgRows.map((a) => a.form_id)));
     const { data: forms } = await supabase.from("feedback_forms").select("*").in("id", formIds);
     const formMap = new Map((forms ?? []).map((f) => [f.id, f as unknown as FeedbackFormDef]));
 
-    const { data: myResponses } = await supabase
-      .from("feedback_form_responses")
-      .select("assignment_id")
-      .eq("user_id", user.id)
-      .in("assignment_id", asgRows.map((a) => a.id));
-    const doneSet = new Set((myResponses ?? []).map((r) => r.assignment_id));
-
-    setAssignments(
-      asgRows.map((a) => ({ ...a, form: formMap.get(a.form_id), myDone: doneSet.has(a.id) }))
-    );
-    setLoadingCoach(false);
+    setPlayerAssignments(asgRows.map((a) => ({ ...a, form: formMap.get(a.form_id) })));
+    setLoading(false);
   };
 
   useEffect(() => {
     if (!teamId) return;
     if (isCoachOrManager) loadCoachData();
-    else loadPlayerAssignments();
+    else loadPlayerData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [teamId, role]);
-
-  const submitMood = async () => {
-    if (!user || !teamId) return toast.error("No team found");
-    setSendingMood(true);
-    const { error } = await supabase.from("morale_checkins").insert({ user_id: user.id, team_id: teamId, mood: selectedMood });
-    setSendingMood(false);
-    if (error) return toast.error(error.message);
-    toast.success("Mood submitted!");
-  };
-
-  const submitSuggestion = async () => {
-    if (!teamId || !suggestion.trim()) return toast.error("Please write a suggestion");
-    setSendingSuggestion(true);
-    const { error } = await supabase.from("suggestions").insert({
-      team_id: teamId,
-      content: suggestion.trim(),
-      is_anonymous: anonymous,
-      user_id: anonymous ? null : user?.id,
-    });
-    setSendingSuggestion(false);
-    if (error) return toast.error(error.message);
-    setSuggestion("");
-    toast.success("Suggestion sent!");
-  };
+  }, [teamId, role, user?.id]);
 
   const handleBroadcast = async () => {
     if (!broadcastForm || !user || !teamId) return;
     setBroadcasting(true);
-    const { error } = await supabase.from("feedback_form_assignments").insert({
+
+    // Fetch all players in this team
+    const { data: members, error: memErr } = await supabase
+      .from("team_members")
+      .select("user_id")
+      .eq("team_id", teamId);
+
+    if (memErr) {
+      setBroadcasting(false);
+      return toast.error(memErr.message);
+    }
+    const playerIds = (members ?? []).map((m) => m.user_id);
+
+    if (playerIds.length === 0) {
+      setBroadcasting(false);
+      return toast.error("No players found in this team. Ask players to join with the team code first.");
+    }
+
+    const broadcastAt = new Date().toISOString();
+    const rows = playerIds.map((pid) => ({
       form_id: broadcastForm.id,
       team_id: teamId,
+      player_id: pid,
       due_date: broadcastDue || null,
       recurrence: broadcastRecurrence,
+      broadcast_at: broadcastAt,
       broadcast_by: user.id,
-    });
+      is_active: true,
+      status: "pending" as const,
+    }));
+
+    const { error } = await supabase.from("feedback_form_assignments").insert(rows);
     setBroadcasting(false);
     if (error) return toast.error(error.message);
-    toast.success(`"${broadcastForm.name}" sent to team`);
+
+    toast.success(`Feedback sent to ${playerIds.length} player${playerIds.length === 1 ? "" : "s"}.`);
     setBroadcastForm(null);
     setBroadcastDue("");
     setBroadcastRecurrence("none");
     loadCoachData();
   };
 
-  const closeAssignment = async (id: string) => {
-    const { error } = await supabase.from("feedback_form_assignments").update({ is_active: false }).eq("id", id);
+  const closeBroadcast = async (group: BroadcastGroup) => {
+    const ids = group.assignments.map((a) => a.id);
+    const { error } = await supabase
+      .from("feedback_form_assignments")
+      .update({ is_active: false })
+      .in("id", ids);
     if (error) return toast.error(error.message);
-    toast.success("Form closed");
+    toast.success("Broadcast closed");
     loadCoachData();
   };
 
@@ -208,13 +239,14 @@ const Feedback = () => {
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               {role === "coach" ? "Coach's View" : "Manager's View"}
             </p>
-            <h1 className="text-2xl font-bold font-display text-foreground">Feedback Forms</h1>
+            <h1 className="text-2xl font-bold font-display text-foreground">Feedback</h1>
+            <p className="text-sm text-muted-foreground mt-1">Create, send, and track team feedback.</p>
           </div>
           <Button
             onClick={() => { setBuilderTemplateId(null); setBuilderEditId(null); setBuilderOpen(true); }}
             size="sm"
           >
-            <Plus className="w-4 h-4" /> New form
+            <Plus className="w-4 h-4" /> New feedback
           </Button>
         </div>
 
@@ -225,38 +257,79 @@ const Feedback = () => {
             <TabsTrigger value="templates">Templates</TabsTrigger>
           </TabsList>
 
-          {/* Active broadcasts */}
           <TabsContent value="active" className="space-y-3 mt-4">
-            {loadingCoach ? (
+            {loading ? (
               <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
-            ) : assignments.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">No active forms. Broadcast one from "My Forms" or "Templates".</p>
+            ) : broadcasts.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                No active feedback. Send one from "My Forms" or "Templates".
+              </p>
             ) : (
-              assignments.map((a) => {
-                const pct = a.totalMembers ? Math.round(((a.responseCount ?? 0) / a.totalMembers) * 100) : 0;
+              broadcasts.map((g) => {
+                const pct = g.total > 0 ? Math.round((g.submitted / g.total) * 100) : 0;
+                const expanded = expandedKey === g.key;
                 return (
-                  <div key={a.id} className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] space-y-3">
+                  <div key={g.key} className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] space-y-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <p className="font-display font-semibold text-card-foreground truncate">{a.form?.name ?? "Form"}</p>
+                        <p className="font-display font-semibold text-card-foreground truncate">
+                          {g.form?.name ?? "Feedback"}
+                        </p>
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-muted-foreground">
-                          {a.due_date && <span className="inline-flex items-center gap-1"><CalendarIcon className="w-3 h-3" />Due {new Date(a.due_date).toLocaleDateString()}</span>}
-                          {a.recurrence !== "none" && <span className="inline-flex items-center gap-1"><Repeat className="w-3 h-3" />{a.recurrence}</span>}
-                          <span className="inline-flex items-center gap-1"><Users className="w-3 h-3" />{a.responseCount}/{a.totalMembers}</span>
+                          <span className="inline-flex items-center gap-1">
+                            <Clock className="w-3 h-3" />Sent {new Date(g.broadcast_at).toLocaleDateString()}
+                          </span>
+                          {g.due_date && (
+                            <span className="inline-flex items-center gap-1">
+                              <CalendarIcon className="w-3 h-3" />Due {new Date(g.due_date).toLocaleDateString()}
+                            </span>
+                          )}
+                          {g.recurrence !== "none" && (
+                            <span className="inline-flex items-center gap-1"><Repeat className="w-3 h-3" />{g.recurrence}</span>
+                          )}
+                          <span className="inline-flex items-center gap-1">
+                            <Users className="w-3 h-3" />{g.submitted}/{g.total} submitted
+                          </span>
                         </div>
                       </div>
-                      <Button variant="ghost" size="sm" onClick={() => closeAssignment(a.id)}>Close</Button>
+                      <Button variant="ghost" size="sm" onClick={() => closeBroadcast(g)}>Close</Button>
                     </div>
+
                     <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
                       <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${pct}%` }} />
                     </div>
+
+                    <button
+                      onClick={() => setExpandedKey(expanded ? null : g.key)}
+                      className="text-xs text-primary font-medium inline-flex items-center gap-1 hover:opacity-80"
+                    >
+                      <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
+                      {expanded ? "Hide details" : "View details"}
+                    </button>
+
+                    {expanded && (
+                      <div className="border-t border-border pt-3 space-y-2">
+                        {g.assignments.map((a) => (
+                          <div key={a.id} className="flex items-center justify-between text-sm">
+                            <span className="text-card-foreground truncate">{a.playerName}</span>
+                            {a.status === "submitted" ? (
+                              <span className="inline-flex items-center gap-1 text-xs text-success font-medium">
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                {a.submitted_at ? new Date(a.submitted_at).toLocaleDateString() : "Submitted"}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">Pending</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })
             )}
           </TabsContent>
 
-          {/* My custom forms */}
           <TabsContent value="forms" className="space-y-3 mt-4">
             {myForms.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">No custom forms yet. Create one or duplicate a template.</p>
@@ -273,7 +346,6 @@ const Feedback = () => {
             )}
           </TabsContent>
 
-          {/* System templates */}
           <TabsContent value="templates" className="space-y-3 mt-4">
             {templates.map((f) => (
               <FormCard
@@ -287,11 +359,10 @@ const Feedback = () => {
           </TabsContent>
         </Tabs>
 
-        {/* Builder dialog */}
         <Dialog open={builderOpen} onOpenChange={setBuilderOpen}>
           <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{builderEditId ? "Edit form" : "New form"}</DialogTitle>
+              <DialogTitle>{builderEditId ? "Edit feedback form" : "New feedback form"}</DialogTitle>
             </DialogHeader>
             <FormBuilder
               initialTemplateId={builderTemplateId}
@@ -302,11 +373,10 @@ const Feedback = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Broadcast dialog */}
         <Dialog open={!!broadcastForm} onOpenChange={(o) => !o && setBroadcastForm(null)}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Broadcast "{broadcastForm?.name}"</DialogTitle>
+              <DialogTitle>Send "{broadcastForm?.name}" to team</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
@@ -339,92 +409,72 @@ const Feedback = () => {
   }
 
   // -------- PLAYER VIEW --------
+  const pending = playerAssignments.filter((a) => a.status !== "submitted");
+  const submitted = playerAssignments.filter((a) => a.status === "submitted");
+
   return (
     <div className="p-4 space-y-6 max-w-3xl mx-auto">
       <div>
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Player's View</p>
         <h1 className="text-2xl font-bold font-display text-foreground">Feedback</h1>
+        <p className="text-sm text-muted-foreground mt-1">Feedback your coach has assigned to you.</p>
       </div>
 
-      {/* Assigned forms */}
+      {/* Pending */}
       <div className="space-y-3">
         <h2 className="font-display font-semibold text-foreground flex items-center gap-2">
-          <FileText className="w-4 h-4 text-primary" /> Assigned Forms
+          <FileText className="w-4 h-4 text-primary" /> Pending Feedback
         </h2>
-        {loadingCoach ? (
+        {loading ? (
           <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
-        ) : assignments.length === 0 ? (
-          <p className="text-sm text-muted-foreground bg-card rounded-xl p-4 shadow-[var(--card-shadow)]">No forms assigned right now.</p>
+        ) : pending.length === 0 ? (
+          <p className="text-sm text-muted-foreground bg-card rounded-xl p-4 shadow-[var(--card-shadow)]">
+            No feedback requests right now.
+          </p>
         ) : (
-          assignments.map((a) => (
+          pending.map((a) => (
             <button
               key={a.id}
-              onClick={() => navigate(`/feedback-form?assignment=${a.id}`)}
-              disabled={a.myDone}
-              className="w-full bg-card rounded-xl p-4 shadow-[var(--card-shadow)] flex items-center gap-3 hover:bg-accent/50 transition-colors text-left disabled:opacity-60"
+              onClick={() => navigate(`/feedback/assignment/${a.id}`)}
+              className="w-full bg-card rounded-xl p-4 shadow-[var(--card-shadow)] flex items-center gap-3 hover:bg-accent/50 transition-colors text-left"
             >
               <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center shrink-0">
                 <FileText className="w-5 h-5 text-accent-foreground" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm text-card-foreground truncate">{a.form?.name ?? "Form"}</p>
+                <p className="font-medium text-sm text-card-foreground truncate">{a.form?.name ?? "Feedback"}</p>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
                   {a.due_date && <span>Due {new Date(a.due_date).toLocaleDateString()}</span>}
-                  {a.myDone && <span className="text-success font-medium">✓ Submitted</span>}
                 </div>
               </div>
-              {!a.myDone && <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </button>
           ))
         )}
       </div>
 
-      {/* Wellness check-in */}
-      <div className="bg-card rounded-xl p-5 shadow-[var(--card-shadow)] space-y-4">
-        <h2 className="font-display font-semibold text-card-foreground text-center">How are you feeling today?</h2>
-        <div className="flex justify-between items-center px-2">
-          {moods.map((mood) => (
-            <button
-              key={mood.value}
-              onClick={() => setSelectedMood(mood.value)}
-              className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${selectedMood === mood.value ? "bg-accent scale-110" : "opacity-50 hover:opacity-75"}`}
+      {/* Submitted */}
+      {submitted.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="font-display font-semibold text-foreground">Submitted</h2>
+          {submitted.map((a) => (
+            <div
+              key={a.id}
+              className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] flex items-center gap-3 opacity-80"
             >
-              <span className="text-3xl">{mood.emoji}</span>
-              <span className="text-[10px] font-medium text-muted-foreground">{mood.label}</span>
-            </button>
+              <div className="w-10 h-10 rounded-lg bg-success/15 flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-5 h-5 text-success" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm text-card-foreground truncate">{a.form?.name ?? "Feedback"}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Submitted {a.submitted_at ? new Date(a.submitted_at).toLocaleDateString() : ""}
+                </p>
+              </div>
+            </div>
           ))}
         </div>
-        <div className="w-full bg-muted rounded-full h-2">
-          <div className="h-full bg-primary rounded-full transition-all duration-300" style={{ width: `${(selectedMood / 5) * 100}%` }} />
-        </div>
-        <Button onClick={submitMood} disabled={sendingMood} className="w-full">
-          {sendingMood ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-          Submit Mood
-        </Button>
-      </div>
-
-      {/* Anonymous suggestion */}
-      <div className="bg-card rounded-xl p-5 shadow-[var(--card-shadow)] space-y-4">
-        <h2 className="font-display font-semibold text-card-foreground">Anonymous Suggestion Box</h2>
-        <p className="text-xs text-muted-foreground">Share thoughts privately with your coach.</p>
-        <textarea
-          value={suggestion}
-          onChange={(e) => setSuggestion(e.target.value)}
-          placeholder="Share your thoughts, ideas, or concerns..."
-          maxLength={1000}
-          className="w-full h-28 p-3 rounded-lg bg-muted text-foreground text-sm placeholder:text-muted-foreground resize-none border border-border focus:outline-none focus:ring-2 focus:ring-ring"
-        />
-        <div className="flex items-center justify-between">
-          <label className="flex items-center gap-2 text-xs text-muted-foreground">
-            <input type="checkbox" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} />
-            Send anonymously
-          </label>
-          <Button onClick={submitSuggestion} disabled={sendingSuggestion} size="sm">
-            {sendingSuggestion ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            Send
-          </Button>
-        </div>
-      </div>
+      )}
     </div>
   );
 };
@@ -467,7 +517,7 @@ const FormCard = ({ form, badge, onBroadcast, onEdit, onDelete, onDuplicate }: F
           <Button variant="outline" size="sm" onClick={onDuplicate}>Duplicate</Button>
         )}
         <Button size="sm" onClick={onBroadcast}>
-          <Send className="w-4 h-4" /> Broadcast
+          <Send className="w-4 h-4" /> Send to team
         </Button>
       </div>
     </div>
