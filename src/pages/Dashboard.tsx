@@ -131,7 +131,7 @@ const Dashboard = () => {
     };
 
     fetchData();
-  }, [teamId, role]);
+  }, [teamId, role, user]);
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(teamCode);
