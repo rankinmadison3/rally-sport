@@ -73,7 +73,7 @@ const FormBuilder = ({ initialTemplateId, editingFormId, onClose, onSaved }: Pro
     const payload = {
       name: name.trim(),
       description: description.trim() || null,
-      questions: questions as unknown as object,
+      questions: questions as never,
       team_id: teamId,
       created_by: user.id,
       is_template: false,
