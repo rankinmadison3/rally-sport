@@ -161,7 +161,10 @@ export type Database = {
           form_id: string
           id: string
           is_active: boolean
+          player_id: string | null
           recurrence: string
+          status: string
+          submitted_at: string | null
           team_id: string
         }
         Insert: {
@@ -172,7 +175,10 @@ export type Database = {
           form_id: string
           id?: string
           is_active?: boolean
+          player_id?: string | null
           recurrence?: string
+          status?: string
+          submitted_at?: string | null
           team_id: string
         }
         Update: {
@@ -183,7 +189,10 @@ export type Database = {
           form_id?: string
           id?: string
           is_active?: boolean
+          player_id?: string | null
           recurrence?: string
+          status?: string
+          submitted_at?: string | null
           team_id?: string
         }
         Relationships: [

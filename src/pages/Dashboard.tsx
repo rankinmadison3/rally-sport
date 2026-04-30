@@ -75,20 +75,13 @@ const Dashboard = () => {
         setMoraleData([30, 45, 40, 55, 60, 58, 72, 78, 75, 82, 85]); // fallback demo data
       }
 
-      // Fetch active feedback form assignments + response counts
-      const { data: memberRows } = await supabase
-        .from("team_members")
-        .select("id")
-        .eq("team_id", teamId);
-      const totalMembers = (memberRows?.length || 0) + 1;
-
+      // Fetch active feedback assignments (per-player rows). Group by form + broadcast.
       const { data: asgs } = await supabase
         .from("feedback_form_assignments")
-        .select("id, form_id")
+        .select("id, form_id, player_id, status, broadcast_at")
         .eq("team_id", teamId)
         .eq("is_active", true)
-        .order("broadcast_at", { ascending: false })
-        .limit(5);
+        .order("broadcast_at", { ascending: false });
 
       if (asgs && asgs.length > 0) {
         const formIds = Array.from(new Set(asgs.map((a) => a.form_id)));
@@ -98,33 +91,30 @@ const Dashboard = () => {
           .in("id", formIds);
         const formMap = new Map((forms ?? []).map((f) => [f.id, f.name]));
 
-        let myDoneSet = new Set<string>();
-        if (role === "player" && user) {
-          const { data: myResponses } = await supabase
-            .from("feedback_form_responses")
-            .select("assignment_id")
-            .eq("user_id", user.id)
-            .in("assignment_id", asgs.map((a) => a.id));
-          myDoneSet = new Set((myResponses ?? []).map((r) => r.assignment_id).filter(Boolean) as string[]);
+        type Group = { id: string; assignmentId: string | null; title: string; responses: number; total: number; myDone?: boolean };
+        const groups = new Map<string, Group>();
+        for (const a of asgs) {
+          const key = `${a.form_id}|${a.broadcast_at}`;
+          let g = groups.get(key);
+          if (!g) {
+            g = {
+              id: a.form_id,
+              assignmentId: null,
+              title: formMap.get(a.form_id) ?? "Feedback",
+              responses: 0,
+              total: 0,
+            };
+            groups.set(key, g);
+          }
+          g.total += 1;
+          if (a.status === "submitted") g.responses += 1;
+          if (role === "player" && user && a.player_id === user.id) {
+            g.assignmentId = a.id;
+            g.myDone = a.status === "submitted";
+          }
         }
 
-        const formData = await Promise.all(
-          asgs.map(async (a) => {
-            const { count } = await supabase
-              .from("feedback_form_responses")
-              .select("id", { count: "exact", head: true })
-              .eq("assignment_id", a.id);
-            return {
-              id: a.form_id,
-              assignmentId: a.id,
-              title: formMap.get(a.form_id) ?? "Form",
-              responses: count || 0,
-              total: totalMembers,
-              myDone: myDoneSet.has(a.id),
-            };
-          })
-        );
-        setFeedbackForms(formData);
+        setFeedbackForms(Array.from(groups.values()).slice(0, 5));
       } else {
         setFeedbackForms([]);
       }
@@ -292,10 +282,10 @@ const Dashboard = () => {
         <p className="text-xs text-muted-foreground text-center">Last {moraleData.length} check-ins</p>
       </div>
 
-      {/* Active Feedback Forms */}
+      {/* Active Feedback */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="font-display font-semibold text-foreground">Active Feedback Forms</h2>
+          <h2 className="font-display font-semibold text-foreground">Active Feedback</h2>
           <button onClick={() => navigate("/feedback")} className="text-xs text-primary font-medium">View all</button>
         </div>
         {feedbackForms.length === 0 ? (
