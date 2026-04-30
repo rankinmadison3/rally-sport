@@ -290,27 +290,47 @@ const Dashboard = () => {
 
       {/* Active Feedback Forms */}
       <div className="space-y-3">
-        <h2 className="font-display font-semibold text-foreground">Active Feedback Forms</h2>
-        {feedbackForms.map((form, i) => (
-          <div
-            key={i}
-            onClick={() => navigate(role === "player" ? "/feedback-form" : "/feedback")}
-            className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] flex items-center gap-3 cursor-pointer hover:bg-accent/50 transition-colors"
-          >
-            <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center shrink-0">
-              <FileText className="w-5 h-5 text-accent-foreground" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm text-card-foreground truncate">{form.title}</p>
-              <div className="flex items-center gap-2 mt-1">
-                <div className="flex-1 bg-muted rounded-full h-1.5">
-                  <div className="h-full bg-primary rounded-full" style={{ width: `${form.total > 0 ? (form.responses / form.total) * 100 : 0}%` }} />
+        <div className="flex items-center justify-between">
+          <h2 className="font-display font-semibold text-foreground">Active Feedback Forms</h2>
+          <button onClick={() => navigate("/feedback")} className="text-xs text-primary font-medium">View all</button>
+        </div>
+        {feedbackForms.length === 0 ? (
+          <div className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] text-sm text-muted-foreground text-center">
+            No active forms.
+          </div>
+        ) : (
+          feedbackForms.map((form) => (
+            <div
+              key={form.assignmentId ?? form.id}
+              onClick={() =>
+                navigate(
+                  role === "player" && form.assignmentId
+                    ? `/feedback-form?assignment=${form.assignmentId}`
+                    : "/feedback"
+                )
+              }
+              className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] flex items-center gap-3 cursor-pointer hover:bg-accent/50 transition-colors"
+            >
+              <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center shrink-0">
+                <FileText className="w-5 h-5 text-accent-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-sm text-card-foreground truncate">{form.title}</p>
+                  {role === "player" && form.myDone && (
+                    <span className="text-[10px] text-success font-medium shrink-0">✓ Done</span>
+                  )}
                 </div>
-                <span className="text-xs text-muted-foreground shrink-0">{form.responses}/{form.total}</span>
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="flex-1 bg-muted rounded-full h-1.5">
+                    <div className="h-full bg-primary rounded-full" style={{ width: `${form.total > 0 ? (form.responses / form.total) * 100 : 0}%` }} />
+                  </div>
+                  <span className="text-xs text-muted-foreground shrink-0">{form.responses}/{form.total}</span>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );
