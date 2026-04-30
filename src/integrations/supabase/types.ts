@@ -446,27 +446,54 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bio: string | null
           created_at: string
+          date_of_birth: string | null
           display_name: string
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          height_cm: number | null
           id: string
+          jersey_number: number | null
+          phone: string | null
+          position: string | null
           updated_at: string
           user_id: string
+          weight_kg: number | null
         }
         Insert: {
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string
+          date_of_birth?: string | null
           display_name?: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          height_cm?: number | null
           id?: string
+          jersey_number?: number | null
+          phone?: string | null
+          position?: string | null
           updated_at?: string
           user_id: string
+          weight_kg?: number | null
         }
         Update: {
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string
+          date_of_birth?: string | null
           display_name?: string
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          height_cm?: number | null
           id?: string
+          jersey_number?: number | null
+          phone?: string | null
+          position?: string | null
           updated_at?: string
           user_id?: string
+          weight_kg?: number | null
         }
         Relationships: []
       }
