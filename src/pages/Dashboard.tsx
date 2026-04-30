@@ -75,25 +75,59 @@ const Dashboard = () => {
         setMoraleData([30, 45, 40, 55, 60, 58, 72, 78, 75, 82, 85]); // fallback demo data
       }
 
-      // Fetch feedback form response counts
-      const { data: members } = await supabase
+      // Fetch active feedback form assignments + response counts
+      const { data: memberRows } = await supabase
         .from("team_members")
         .select("id")
         .eq("team_id", teamId);
-      const totalMembers = (members?.length || 0) + 1;
+      const totalMembers = (memberRows?.length || 0) + 1;
 
-      const forms = ["Post-Game Reflection", "Weekly Wellness Check", "Team Chemistry Survey"];
-      const formData = await Promise.all(
-        forms.map(async (title) => {
-          const { count } = await supabase
+      const { data: asgs } = await supabase
+        .from("feedback_form_assignments")
+        .select("id, form_id")
+        .eq("team_id", teamId)
+        .eq("is_active", true)
+        .order("broadcast_at", { ascending: false })
+        .limit(5);
+
+      if (asgs && asgs.length > 0) {
+        const formIds = Array.from(new Set(asgs.map((a) => a.form_id)));
+        const { data: forms } = await supabase
+          .from("feedback_forms")
+          .select("id, name")
+          .in("id", formIds);
+        const formMap = new Map((forms ?? []).map((f) => [f.id, f.name]));
+
+        let myDoneSet = new Set<string>();
+        if (role === "player" && user) {
+          const { data: myResponses } = await supabase
             .from("feedback_form_responses")
-            .select("id", { count: "exact", head: true })
-            .eq("team_id", teamId)
-            .eq("form_name", title);
-          return { title, responses: count || 0, total: totalMembers };
-        })
-      );
-      setFeedbackForms(formData);
+            .select("assignment_id")
+            .eq("user_id", user.id)
+            .in("assignment_id", asgs.map((a) => a.id));
+          myDoneSet = new Set((myResponses ?? []).map((r) => r.assignment_id).filter(Boolean) as string[]);
+        }
+
+        const formData = await Promise.all(
+          asgs.map(async (a) => {
+            const { count } = await supabase
+              .from("feedback_form_responses")
+              .select("id", { count: "exact", head: true })
+              .eq("assignment_id", a.id);
+            return {
+              id: a.form_id,
+              assignmentId: a.id,
+              title: formMap.get(a.form_id) ?? "Form",
+              responses: count || 0,
+              total: totalMembers,
+              myDone: myDoneSet.has(a.id),
+            };
+          })
+        );
+        setFeedbackForms(formData);
+      } else {
+        setFeedbackForms([]);
+      }
     };
 
     fetchData();
