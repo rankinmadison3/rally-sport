@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, Loader2, Users, Trophy, Activity } from "lucide-react";
+import { ArrowRight, Loader2, Users, Trophy, Activity } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import logo from "@/assets/rally-sport-logo.png";
 import { toast } from "sonner";
@@ -55,180 +55,114 @@ const Login = () => {
   };
 
   const inputClass =
-    "w-full px-3.5 py-2.5 rounded-lg bg-muted text-foreground text-sm border border-border focus:outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground transition-colors";
-  const labelClass = "block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5";
+    "w-full px-4 py-3.5 bg-muted border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all";
+  const labelClass =
+    "block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2";
+
+  const features = [
+    { icon: <Users className="w-5 h-5" />, title: "Role-based access", sub: "Coaches, players & managers" },
+    { icon: <Trophy className="w-5 h-5" />, title: "Performance tracking", sub: "Stats, attendance & more" },
+    { icon: <Activity className="w-5 h-5" />, title: "Live team updates", sub: "Stay in sync, always" },
+  ];
 
   return (
     <>
-      {/* ── Font import ── */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
-        .tp-display { font-family: 'Barlow Condensed', sans-serif; }
-        .tp-body    { font-family: 'DM Sans', sans-serif; }
-
-        /* Smooth mode switch */
-        .form-fade { animation: fadeUp 0.22s ease both; }
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(6px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Stat card shimmer on desktop */
-        .stat-card {
-          background: rgba(255,255,255,0.08);
-          border: 1px solid rgba(255,255,255,0.13);
-          border-radius: 12px;
-          padding: 14px 18px;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-        .stat-icon {
-          width: 36px; height: 36px;
-          border-radius: 8px;
-          background: rgba(255,255,255,0.15);
-          display: flex; align-items: center; justify-content: center;
-          flex-shrink: 0;
-        }
-
-        /* Role selector pill */
-        .role-pill {
-          flex: 1;
-          padding: 8px 4px;
-          border-radius: 8px;
-          font-size: 13px;
-          font-weight: 600;
-          text-transform: capitalize;
-          text-align: center;
-          border: 1.5px solid transparent;
-          transition: all 0.15s ease;
-          cursor: pointer;
-          background: transparent;
-        }
-        .role-pill.active {
-          background: hsl(var(--primary));
-          color: hsl(var(--primary-foreground));
-          border-color: hsl(var(--primary));
-        }
-        .role-pill.inactive {
-          color: hsl(var(--muted-foreground));
-          border-color: hsl(var(--border));
-        }
-        .role-pill.inactive:hover {
-          border-color: hsl(var(--ring));
-          color: hsl(var(--foreground));
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+        .font-display { font-family: 'Space Grotesk', sans-serif; }
+        .font-body { font-family: 'Inter', sans-serif; }
       `}</style>
 
-      {/* ════════════════════════════════════════
-          OUTER SHELL — mobile: dvh flex-col
-                       desktop: 2-col grid
-      ════════════════════════════════════════ */}
-      <div
-        className="tp-body min-h-dvh flex flex-col lg:grid lg:grid-cols-2"
-        style={{ background: "hsl(var(--primary))" }}
-      >
-        {/* ── LEFT PANEL (brand) ── */}
-        {/* Mobile: compact top bar  |  Desktop: full-height brand panel */}
+      <div className="font-body min-h-dvh flex flex-col lg:flex-row bg-background text-foreground antialiased">
+        {/* ── LEFT: Brand panel (desktop) ── */}
         <div
-          className="relative flex flex-col overflow-hidden
-                        /* mobile */
-                        flex-none px-6 pb-6 pt-10 items-center justify-end
-                        /* desktop */
-                        lg:min-h-screen lg:items-start lg:justify-between lg:px-14 lg:py-14"
+          className="hidden lg:flex lg:w-1/2 flex-col justify-between p-16 relative overflow-hidden"
+          style={{ background: "hsl(var(--primary))" }}
         >
-          {/* Background texture dots — desktop only */}
+          {/* Texture overlay */}
           <div
-            className="hidden lg:block absolute inset-0 pointer-events-none"
+            className="absolute inset-0 pointer-events-none"
             style={{
-              backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)",
-              backgroundSize: "28px 28px",
+              opacity: 0.1,
+              backgroundImage: "radial-gradient(circle at 2px 2px, white 1px, transparent 0)",
+              backgroundSize: "24px 24px",
             }}
           />
 
           {/* Logo + wordmark */}
-          <div className="flex items-center gap-3 lg:flex-col lg:items-start lg:gap-4">
-            <img
-              src={logo}
-              alt="Rally Sport"
-              className="h-14 lg:h-20 w-auto object-contain flex-shrink-0"
-            />
+          <div className="relative z-10 flex items-center gap-3">
+            <img src={logo} alt="Rally Sport" className="h-14 w-auto object-contain" />
             <div>
-              <p className="text-white/60 hidden lg:block mt-1" style={{ fontSize: "15px", fontWeight: 500 }}>
-                Sports Team Management
-              </p>
+              <span className="font-display font-bold text-white text-xl tracking-tight uppercase block leading-tight">
+                Rally Sport
+              </span>
+              <p className="text-white/70 text-sm font-medium">Sports Team Management</p>
             </div>
           </div>
 
-          {/* Desktop hero copy */}
-          <div className="hidden lg:block">
-            <p
-              className="tp-display text-white leading-tight mb-10"
-              style={{ fontSize: "clamp(2rem, 3.5vw, 3rem)", fontWeight: 700, maxWidth: "420px" }}
+          {/* Hero copy + feature cards */}
+          <div className="relative z-10">
+            <h1
+              className="font-display font-bold text-white leading-tight uppercase tracking-tighter max-w-md mb-12"
+              style={{ fontSize: "clamp(2rem, 3.5vw, 3rem)" }}
             >
               One platform for every team, every role, every game.
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px", maxWidth: "340px" }}>
-              {[
-                { icon: <Users size={16} />, title: "Role-based access", sub: "Coaches, players & managers" },
-                { icon: <Trophy size={16} />, title: "Performance tracking", sub: "Stats, attendance & more" },
-                { icon: <Activity size={16} />, title: "Live team updates", sub: "Stay in sync, always" },
-              ].map((s) => (
-                <div key={s.title} className="stat-card">
-                  <div className="stat-icon" style={{ color: "rgba(255,255,255,0.85)" }}>
-                    {s.icon}
+            </h1>
+
+            <div className="space-y-4 max-w-sm">
+              {features.map((f) => (
+                <div
+                  key={f.title}
+                  className="flex items-center gap-4 p-4 rounded-xl bg-white/10 border border-white/10 backdrop-blur-md"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0 text-white">
+                    {f.icon}
                   </div>
                   <div>
-                    <p style={{ color: "rgba(255,255,255,0.95)", fontSize: "13px", fontWeight: 600, margin: 0 }}>
-                      {s.title}
-                    </p>
-                    <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "12px", margin: 0 }}>{s.sub}</p>
+                    <p className="text-white font-semibold text-sm">{f.title}</p>
+                    <p className="text-white/60 text-xs">{f.sub}</p>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Mobile: small tagline under logo */}
-          <p className="text-white/50 text-xs mt-1.5 lg:hidden" style={{ fontWeight: 500 }}>
-            Sports Team Management
-          </p>
+          {/* Footer */}
+          <div className="relative z-10 text-white/40 text-xs font-medium uppercase tracking-widest">
+            © Rally Sport Systems
+          </div>
         </div>
 
-        {/* ── RIGHT PANEL (form) ── */}
-        {/* Mobile: rounded-top card that fills rest of screen
-            Desktop: centered card on white/card bg         */}
+        {/* ── Mobile crimson header ── */}
         <div
-          className="flex-1 flex flex-col
-                     rounded-t-3xl
-                     lg:flex-none lg:rounded-none lg:items-center lg:justify-center lg:py-16 lg:px-8"
-          style={{ background: "hsl(var(--card))" }}
+          className="lg:hidden flex items-center justify-center gap-3 px-6 py-6"
+          style={{ background: "hsl(var(--primary))" }}
         >
-          {/* Desktop: inner card */}
-          <div
-            className="w-full flex flex-col px-6 pt-7 pb-8
-                       lg:max-w-md lg:rounded-2xl lg:border lg:px-10 lg:py-10 lg:shadow-sm"
-            style={{ borderColor: "hsl(var(--border))" }}
-          >
-            {/* Heading */}
-            <div className="mb-5 lg:mb-6">
-              <h2
-                className="tp-display text-card-foreground leading-tight"
-                style={{ fontSize: "clamp(1.5rem, 4vw, 2rem)", fontWeight: 700 }}
-              >
+          <img src={logo} alt="Rally Sport" className="h-12 w-auto object-contain" />
+          <div>
+            <span className="font-display font-bold text-white text-base uppercase tracking-tight block leading-tight">
+              Rally Sport
+            </span>
+            <p className="text-white/70 text-xs font-medium">Sports Team Management</p>
+          </div>
+        </div>
+
+        {/* ── RIGHT: Form panel ── */}
+        <div className="flex-1 flex items-center justify-center p-6 sm:p-8 lg:p-16 bg-card">
+          <div className="w-full max-w-[440px]">
+            <div className="mb-8 lg:mb-10 text-center lg:text-left">
+              <h2 className="font-display text-3xl lg:text-4xl font-bold tracking-tight text-card-foreground mb-2">
                 {isSignUp ? "Create account" : "Welcome back"}
               </h2>
-              <p className="text-muted-foreground text-sm mt-0.5">
+              <p className="text-muted-foreground font-medium text-sm">
                 {isSignUp ? "Join your team on TeamPulse" : "Sign in to your TeamPulse account"}
               </p>
             </div>
 
-            {/* Form fields */}
-            <div key={isSignUp ? "signup" : "signin"} className="form-fade flex flex-col gap-3.5 flex-1">
+            <div className="space-y-5">
               {isSignUp && (
                 <>
-                  {/* Full Name */}
-                  <div>
+                  <div className="space-y-2">
                     <label className={labelClass}>Full Name</label>
                     <input
                       type="text"
@@ -239,41 +173,46 @@ const Login = () => {
                     />
                   </div>
 
-                  {/* Role */}
-                  <div>
+                  <div className="space-y-2">
                     <label className={labelClass}>I am a…</label>
-                    <div style={{ display: "flex", gap: "8px" }}>
-                      {(["coach", "manager", "player"] as const).map((r) => (
-                        <button
-                          key={r}
-                          onClick={() => setRole(r)}
-                          className={`role-pill ${role === r ? "active" : "inactive"}`}
-                        >
-                          {r}
-                        </button>
-                      ))}
+                    <div className="flex gap-2">
+                      {(["coach", "manager", "player"] as const).map((r) => {
+                        const active = role === r;
+                        return (
+                          <button
+                            key={r}
+                            type="button"
+                            onClick={() => setRole(r)}
+                            className={`flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider border transition-all ${
+                              active
+                                ? "bg-primary text-primary-foreground border-primary"
+                                : "bg-transparent text-muted-foreground border-border hover:border-primary hover:text-foreground"
+                            }`}
+                          >
+                            {r}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
-                  {/* Team Code */}
                   {(role === "player" || role === "manager") && (
-                    <div>
+                    <div className="space-y-2">
                       <label className={labelClass}>Team Code</label>
                       <input
                         type="text"
                         value={teamCode}
                         onChange={(e) => setTeamCode(e.target.value.toUpperCase())}
-                        placeholder="e.g. A7K9Q2"
+                        placeholder="A7K9Q2"
                         maxLength={6}
-                        className={inputClass + " tracking-widest font-mono"}
+                        className={`${inputClass} tracking-widest font-mono`}
                       />
                     </div>
                   )}
                 </>
               )}
 
-              {/* Email */}
-              <div>
+              <div className="space-y-2">
                 <label className={labelClass}>Email</label>
                 <input
                   type="email"
@@ -284,9 +223,19 @@ const Login = () => {
                 />
               </div>
 
-              {/* Password */}
-              <div>
-                <label className={labelClass}>Password</label>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className={labelClass + " mb-0"}>Password</label>
+                  {!isSignUp && (
+                    <button
+                      type="button"
+                      className="text-xs font-semibold hover:underline"
+                      style={{ color: "hsl(var(--primary))" }}
+                    >
+                      Forgot password?
+                    </button>
+                  )}
+                </div>
                 <input
                   type="password"
                   value={password}
@@ -297,46 +246,37 @@ const Login = () => {
                 />
               </div>
 
-              {/* Forgot password — sign-in only */}
-              {!isSignUp && (
-                <div className="flex justify-end -mt-1">
-                  <button className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                    Forgot password?
-                  </button>
-                </div>
-              )}
-
-              {/* Submit */}
               <button
                 onClick={handleSubmit}
                 disabled={loading}
-                className="w-full py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-opacity hover:opacity-90 active:scale-[0.98] disabled:opacity-50 mt-1"
+                className="group w-full py-4 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-50 shadow-lg"
                 style={{
                   background: "hsl(var(--primary))",
                   color: "hsl(var(--primary-foreground))",
-                  transition: "opacity 0.15s ease, transform 0.1s ease",
+                  boxShadow: "0 10px 25px -5px hsl(var(--primary) / 0.35)",
                 }}
               >
                 {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                {isSignUp ? "Create Account" : "Sign In"}
-                {!loading && <ChevronRight className="w-4 h-4" />}
+                <span>{isSignUp ? "Create Account" : "Sign In"}</span>
+                {!loading && (
+                  <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
+                )}
               </button>
+            </div>
 
-              {/* Switch mode */}
-              <p className="text-center text-xs text-muted-foreground pt-0.5">
+            <div className="mt-10 pt-8 border-t border-border text-center">
+              <p className="text-muted-foreground font-medium text-sm">
                 {isSignUp ? "Already have an account? " : "Don't have an account? "}
                 <button
                   onClick={() => setIsSignUp(!isSignUp)}
-                  className="font-semibold text-foreground hover:underline transition-colors"
+                  className="font-bold hover:underline ml-1"
+                  style={{ color: "hsl(var(--primary))" }}
                 >
                   {isSignUp ? "Sign in" : "Sign up"}
                 </button>
               </p>
             </div>
           </div>
-
-          {/* Bottom safe-area spacer on mobile */}
-          <div className="h-safe-area-inset-bottom lg:hidden" />
         </div>
       </div>
     </>

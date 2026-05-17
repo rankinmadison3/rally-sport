@@ -1,25 +1,33 @@
-## Fix: App Not Loading (CSS Build Error)
+## Goal
+Refresh `src/pages/Login.tsx` to the selected "High-performance minimal" direction. Visual-only refactor; all auth behavior, signup fields (name, role pills, team code), forgot-password link, and mode switcher stay intact.
 
-### Problem
-The app is stuck on a loading spinner because `src/index.css` has an invalid CSS import order. The Google Fonts `@import` is placed *after* the `@tailwind` directives, which violates the CSS spec — `@import` must come before all other statements. Vite is reporting:
+## Changes (src/pages/Login.tsx)
 
-```
-[vite:css] @import must precede all other statements (besides @charset or empty @layer)
-```
+**Layout**
+- Replace the current split-screen with a `flex` 2-column shell: left brand panel (`hidden lg:flex w-1/2`, crimson bg), right form panel (`w-full lg:w-1/2`, white bg, centered).
+- Mobile: hide left panel entirely. Show a compact crimson header bar at the top with logo + "Sports Team Management" tagline, then the form on white background.
 
-This breaks the stylesheet build and prevents the app from rendering past the initial spinner.
+**Left brand panel (desktop)**
+- Crimson background with subtle radial-dot texture overlay (8% opacity, 24px grid).
+- Top: Rally Sport logo + uppercase wordmark + small tagline.
+- Middle: uppercase Space Grotesk H1 — "One platform for every team, every role, every game." (tracking-tighter, max-w).
+- Three feature cards (Users/Trophy/Activity) in vertical stack — translucent `bg-white/10 border-white/10 backdrop-blur-md rounded-xl`, icon square + title + sub-label.
+- Bottom: small uppercase tracking-widest copyright "© Rally Sport Systems".
 
-### Fix
-**File: `src/index.css`** (lines 1–5)
+**Right form panel**
+- Max-width 440px, left-aligned on desktop, centered on mobile.
+- Heading: Space Grotesk bold "Welcome back" / "Create account" + muted subhead.
+- Inputs: `bg-slate-50` style mapped to design tokens (`bg-muted`), border, rounded-lg, `focus:ring-2 focus:ring-primary` — keep current inputClass but switch to ring-primary and add taller py-3.5.
+- Labels: uppercase, bold, tracking-widest, muted (matches current `labelClass`).
+- Keep signup-only fields: Full Name, Role pills, Team Code.
+- Sign-in: keep Forgot password? link, right-aligned, primary-colored.
+- Submit button: crimson, full width, py-4, bold, with arrow icon that translates on hover; loading spinner preserved.
+- Bottom: "Don't have an account? Sign up" / vice versa, separated by top border with `mt-10 pt-8`.
 
-Move the Google Fonts `@import` to the very top of the file, before the `@tailwind` directives:
+**Tokens & memory**
+- Use semantic tokens (`hsl(var(--primary))`, `bg-card`, `text-muted-foreground`, etc.) — no hardcoded `#D1113E`.
+- Keep Space Grotesk + Inter (matches project Visual Identity memory). Remove the unused Barlow Condensed / DM Sans `<style>` import.
 
-```css
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap');
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-```
-
-That single reorder will resolve the build error and the app will load normally.
+**Out of scope**
+- No changes to AuthContext, signUp/signIn logic, routes, or DB.
+- No new functionality (forgot-password modal, OAuth buttons, etc.).
