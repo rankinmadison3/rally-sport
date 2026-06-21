@@ -5,6 +5,7 @@ import {
   User,
   ClipboardCheck,
   Sparkles,
+  Trophy,
   LucideIcon,
 } from "lucide-react";
 
