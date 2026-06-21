@@ -13,6 +13,7 @@ import TeamCalendar from "@/pages/TeamCalendar";
 import Chat from "@/pages/Chat";
 import FeedbackForm from "@/pages/FeedbackForm";
 import Profile from "@/pages/Profile";
+import SeasonRecord from "@/pages/SeasonRecord";
 import Reflections from "@/pages/Reflections";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/NotFound";
@@ -47,6 +48,7 @@ const App = () => (
               <Route path="/feedback/form/:formId" element={<ProtectedRoute><FeedbackForm /></ProtectedRoute>} />
               <Route path="/reflections" element={<ProtectedRoute><Reflections /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/season" element={<ProtectedRoute><SeasonRecord /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AppLayout>

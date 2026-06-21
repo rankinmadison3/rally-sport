@@ -5,6 +5,7 @@ import {
   User,
   ClipboardCheck,
   Sparkles,
+  Trophy,
   LucideIcon,
 } from "lucide-react";
 
@@ -29,6 +30,7 @@ export const desktopNavItems: NavItem[] = [
   { path: "/feedback", icon: MessageCircle, label: "Feedback" },
   { path: "/tasks", icon: ClipboardCheck, label: "Tasks" },
   { path: "/calendar", icon: Calendar, label: "Calendar" },
+  { path: "/season", icon: Trophy, label: "Season Record" },
   { path: "/chat", icon: User, label: "Chat" },
   { path: "/reflections", icon: Sparkles, label: "Reflections" },
 ];
@@ -38,6 +40,7 @@ export const pageTitles: Record<string, { title: string; subtitle?: string }> = 
   "/feedback": { title: "Feedback", subtitle: "Create, send, and track team feedback" },
   "/tasks": { title: "Tasks", subtitle: "Assignments and progress" },
   "/calendar": { title: "Team Calendar", subtitle: "Games, practices and events" },
+  "/season": { title: "Season Record", subtitle: "Log wins and losses" },
   "/chat": { title: "Chat", subtitle: "Team messaging" },
   "/reflections": { title: "Reflections", subtitle: "Personal check-ins and notes" },
   "/profile": { title: "Profile", subtitle: "Your account" },

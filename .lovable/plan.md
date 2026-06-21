@@ -1,67 +1,48 @@
-# Preseason Task Templates
+# Surface Game Result Logging
 
-Let coaches prebuild a task list before the roster exists. New templates are stored separately from real assignments, then auto-cloned into each player's task list the moment they join the team.
+Today, wins/losses are entered by tapping a hidden Win/Loss toggle inside a calendar event. Make that flow discoverable from the Dashboard and add a dedicated page for managing season results.
 
-## How it works (user-facing)
+## 1. Dashboard prompt: "Log Result"
 
-- A new **"Preseason Templates"** section appears on the Tasks page for coaches and managers.
-- In the **New Task** dialog, the "Assign to" dropdown gains a top option: **"All future players (template)"**. Picking it saves the task as a template instead of an assignment.
-- Templates show in their own collapsible list with category, due date, and notes — same card style as real tasks but visually muted with a "Template" badge.
-- Each template row gets two actions: **Delete** and **Apply to current roster** (clones the template to every player currently on the team, in case the coach wants to retroactively push it).
-- When a new player joins via team code, every active template is automatically inserted into their `action_steps` as a fresh open task.
-- Players never see the templates table — only the real tasks generated from it.
+In `src/pages/Dashboard.tsx`, just under the existing season record card (visible to coach/manager only):
 
-## Data model
+- Query for **past regular-season games with no `game_result`** for this team (`event_type='game'`, `is_regular_season=true`, `event_date <= today`, `game_result IS NULL`), ordered by `event_date desc`, limit 3.
+- If results exist, render an **"Unlogged games"** card listing each one with date, label, and two inline buttons: **Win** (green) and **Loss** (red).
+- Clicking a button updates the event's `game_result`; the existing `recalc_season_record` trigger refreshes `teams.season_wins/losses`. Refresh the dashboard query so the W-L stat and progress bar update immediately.
+- A small "Manage season →" link in that card's header navigates to the new Season Record page.
+- Players never see this card.
 
-New table `public.action_step_templates`:
+## 2. New Season Record page
 
-- `team_id` (FK teams)
-- `created_by` (FK auth.users)
-- `text`, `notes`, `category`, `due_date` (same shape as `action_steps` minus `user_id` and `done`)
-- `active` boolean default true (so a coach can pause a template without deleting it)
-- standard `id`, `created_at`, `updated_at`
+New route `/season` and file `src/pages/SeasonRecord.tsx` (coach/manager only — players are redirected to `/`):
 
-RLS:
-- Coach (team owner) and managers (team members with manager role) can select/insert/update/delete templates for their team.
-- Players have **no** access to this table.
+- Header: team name, big W-L record, win %, and a count of unlogged games.
+- **Three lists** (collapsible sections):
+  - **Needs result** — past regular-season games with `game_result IS NULL`. Each row has inline Win/Loss buttons.
+  - **Regular season** — all regular-season games with a result, grouped by month, each row showing date, opponent label, W/L badge, and a small "change" menu (Win / Loss / Clear).
+  - **Other games** — non-regular-season games (scrimmages, preseason, playoffs) — shown for context with a note "Not counted toward season record."
+- Same DB writes as the calendar: `update calendar_events set game_result = ...`. Trigger handles the tally.
+- Empty state when no games exist: "No games scheduled yet. Add games from the Team Calendar."
 
-GRANTs to `authenticated` and `service_role` (no `anon`).
+## 3. Navigation
 
-## Auto-assignment on join
+- Add **Season Record** to `desktopNavItems` in `src/config/navItems.ts` (icon: `Trophy`). Add to `pageTitles` map.
+- Add a `data-tour="/season"` selector and a new step in the coach + manager flows of `OrientationTutorial.tsx`: "Season Record — Log wins and losses here. Updates your team's progress bar and stats automatically."
+- Skip adding to the mobile bottom nav (already full at 4 items); reachable via Dashboard link.
 
-Postgres trigger `on_team_member_added` on `public.team_members AFTER INSERT`:
+## 4. Out of scope
 
-- Looks up the new member's role from `user_roles`.
-- If role is `player`, inserts a row into `action_steps` for each active template on that team, copying `text`, `notes`, `category`, `due_date`, with `user_id = NEW.user_id`, `assigned_by = template.created_by`, `done = false`.
-- Manager joins do not get auto-assigned (managers don't receive tasks today).
-
-Function is `SECURITY DEFINER` with `search_path = public` so it can write `action_steps` regardless of the joining user's RLS context.
-
-## Manual "Apply to roster" action
-
-Client-side: for each current `team_members` row where the user has role `player`, insert a copy of the template into `action_steps`. This is a one-shot button — no dedup, so re-clicking creates duplicates (we'll show a confirm dialog: "This will add this task to all N current players. Continue?").
-
-## Frontend changes
-
-`src/pages/Tasks.tsx`:
-
-- Fetch templates alongside tasks when `isCoachOrManager`.
-- Add `"__template__"` sentinel as first item in the assignee `Select`, labeled **"All future players (template)"**. Auto-select it when `players.length === 0`.
-- Branch `handleCreate`: if assignee is the sentinel, insert into `action_step_templates`; else current behavior.
-- New `<TemplatesSection>` above the Open tasks list (coach/manager only), with delete + "Apply to roster" buttons.
-- Update empty state copy: when no players and no templates, suggest "Start by prebuilding your season plan as templates."
-
-No changes to player view.
-
-## Out of scope
-
-- Scheduling templates to auto-create on a specific date (templates apply only at player-join time).
-- Editing a template after creation (delete + recreate for v1).
-- Bulk-import or duplicate-template detection.
-- Notifying players when auto-assigned tasks land (they'll just appear in their Tasks list).
+- Score entry (we only track W/L today; no `home_score`/`away_score` columns).
+- Per-player game stats.
+- Auto-prompting players for post-game reflections (separate feature).
+- Editing events themselves from this page — that still happens in Team Calendar.
 
 ## Files touched
 
-- New migration: `action_step_templates` table + RLS + GRANTs + trigger function + trigger on `team_members`.
-- `src/pages/Tasks.tsx`: template fetching, UI section, create-as-template branch, apply-to-roster action.
-- `src/integrations/supabase/types.ts`: regenerated by the migration.
+- `src/pages/Dashboard.tsx` — add unlogged-games card with inline W/L buttons.
+- `src/pages/SeasonRecord.tsx` — new page.
+- `src/App.tsx` — register `/season` route under `ProtectedRoute`.
+- `src/config/navItems.ts` — add Season Record entry + page title.
+- `src/components/OrientationTutorial.tsx` — add Season Record step for coach + manager.
+
+No DB changes required — schema and trigger already support this.
