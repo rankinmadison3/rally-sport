@@ -63,8 +63,10 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
           </div>
         </main>
       </div>
+      <OrientationTutorial open={tutorialOpen} onOpenChange={setTutorialOpen} />
     </div>
   );
+
 };
 
 export default AppLayout;
