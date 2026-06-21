@@ -54,6 +54,18 @@ interface PlayerOption {
   display_name: string;
 }
 
+interface TemplateRow {
+  id: string;
+  text: string;
+  notes: string | null;
+  category: Category;
+  due_date: string | null;
+  active: boolean;
+  created_at: string;
+}
+
+const TEMPLATE_SENTINEL = "__template__";
+
 const Tasks = () => {
   const { user, role, teamId } = useAuth();
   const navigate = useNavigate();
