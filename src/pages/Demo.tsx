@@ -112,7 +112,8 @@ const Demo = () => {
         created_at: daysAgo(i).toISOString(),
       }));
 
-      const [t1, t2, t3, t4, t5] = await Promise.all([
+      const labels = ["Tasks", "Calendar", "Suggestions", "Ratings", "Moods"];
+      const results = await Promise.all([
         supabase.from("action_steps").insert(taskRows),
         supabase.from("calendar_events").insert(eventRows),
         supabase.from("suggestions").insert(suggestionRows),
@@ -120,9 +121,13 @@ const Demo = () => {
         supabase.from("morale_checkins").insert(moodRows),
       ]);
 
-      const errs = [t1, t2, t3, t4, t5].map((r) => r.error?.message).filter(Boolean);
-      if (errs.length) {
-        toast.error(`Some inserts failed: ${errs[0]}`);
+      const failed = results
+        .map((r, i) => (r.error ? `${labels[i]}: ${r.error.message}` : null))
+        .filter(Boolean) as string[];
+      const okCount = results.length - failed.length;
+
+      if (failed.length) {
+        toast.error(`${okCount}/${results.length} sections seeded. Failed — ${failed.join(" | ")}`);
       } else {
         toast.success("Demo data loaded across the app.");
       }
