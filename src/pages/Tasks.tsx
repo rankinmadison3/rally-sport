@@ -72,6 +72,7 @@ const Tasks = () => {
   const isCoachOrManager = role === "coach" || role === "manager";
 
   const [tasks, setTasks] = useState<TaskRow[]>([]);
+  const [templates, setTemplates] = useState<TemplateRow[]>([]);
   const [players, setPlayers] = useState<PlayerOption[]>([]);
   const [profileMap, setProfileMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
