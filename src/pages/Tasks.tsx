@@ -320,14 +320,14 @@ const Tasks = () => {
           </div>
         </div>
         {isCoachOrManager && (
-          <Button onClick={() => setDialogOpen(true)} size="sm" className="gap-1.5">
+          <Button onClick={openCreateDialog} size="sm" className="gap-1.5">
             <Plus className="w-4 h-4" /> New
           </Button>
         )}
       </div>
 
       {/* Empty state */}
-      {!loading && tasks.length === 0 && (
+      {!loading && tasks.length === 0 && templates.length === 0 && (
         <div className="bg-card rounded-xl p-8 shadow-[var(--card-shadow)] text-center space-y-2">
           <div className="w-12 h-12 rounded-full bg-muted mx-auto flex items-center justify-center">
             <ClipboardCheck className="w-6 h-6 text-muted-foreground" />
@@ -335,10 +335,76 @@ const Tasks = () => {
           <p className="font-medium text-card-foreground">No tasks yet</p>
           <p className="text-sm text-muted-foreground">
             {isCoachOrManager
-              ? "Create a task and assign it to a player to get started."
+              ? players.length === 0
+                ? "No players have joined yet. Prebuild your season plan as templates — they'll auto-assign to every player who joins."
+                : "Create a task and assign it to a player to get started."
               : "Your coach hasn't assigned you any tasks yet."}
           </p>
         </div>
+      )}
+
+      {/* Preseason Templates (coach/manager) */}
+      {isCoachOrManager && templates.length > 0 && (
+        <section className="space-y-3">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" />
+              Preseason Templates · {templates.length}
+            </h2>
+            <p className="text-[10px] text-muted-foreground">Auto-assigns to new players</p>
+          </div>
+          <div className="space-y-2">
+            {templates.map((tpl) => {
+              const due = formatDue(tpl.due_date);
+              return (
+                <article
+                  key={tpl.id}
+                  className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] border border-dashed border-border space-y-2"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="font-medium text-sm text-card-foreground leading-snug">{tpl.text}</p>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {players.length > 0 && (
+                        <button
+                          onClick={() => handleApplyTemplateToRoster(tpl)}
+                          className="text-muted-foreground hover:text-primary p-1"
+                          aria-label="Apply to current roster"
+                          title="Apply to current roster"
+                        >
+                          <Send className="w-4 h-4" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleDeleteTemplate(tpl.id)}
+                        className="text-muted-foreground hover:text-destructive p-1"
+                        aria-label="Delete template"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  {tpl.notes && (
+                    <p className="text-xs text-muted-foreground whitespace-pre-line">{tpl.notes}</p>
+                  )}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary inline-flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" /> Template
+                    </span>
+                    <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full", CATEGORY_STYLES[tpl.category])}>
+                      {tpl.category}
+                    </span>
+                    {due && (
+                      <span className="text-[10px] font-medium px-2 py-0.5 rounded-full inline-flex items-center gap-1 bg-muted text-muted-foreground">
+                        <CalendarIcon className="w-3 h-3" />
+                        {due.label}
+                      </span>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
       )}
 
       {/* Open tasks */}
