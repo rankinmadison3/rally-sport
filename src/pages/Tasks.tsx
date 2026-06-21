@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Trash2, Calendar as CalendarIcon, CheckCircle2, Circle, ClipboardCheck } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Calendar as CalendarIcon, CheckCircle2, Circle, ClipboardCheck, Sparkles, Send } from "lucide-react";
 import { format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,12 +54,25 @@ interface PlayerOption {
   display_name: string;
 }
 
+interface TemplateRow {
+  id: string;
+  text: string;
+  notes: string | null;
+  category: Category;
+  due_date: string | null;
+  active: boolean;
+  created_at: string;
+}
+
+const TEMPLATE_SENTINEL = "__template__";
+
 const Tasks = () => {
   const { user, role, teamId } = useAuth();
   const navigate = useNavigate();
   const isCoachOrManager = role === "coach" || role === "manager";
 
   const [tasks, setTasks] = useState<TaskRow[]>([]);
+  const [templates, setTemplates] = useState<TemplateRow[]>([]);
   const [players, setPlayers] = useState<PlayerOption[]>([]);
   const [profileMap, setProfileMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -90,6 +103,16 @@ const Tasks = () => {
       return;
     }
     setTasks((taskData as TaskRow[]) || []);
+
+    // Templates (coach/manager only)
+    if (isCoachOrManager) {
+      const { data: tplData } = await supabase
+        .from("action_step_templates")
+        .select("id, text, notes, category, due_date, active, created_at")
+        .eq("team_id", teamId)
+        .order("created_at", { ascending: false });
+      setTemplates((tplData as TemplateRow[]) || []);
+    }
 
     // Players list (for coach assignment + for displaying assignee names)
     if (isCoachOrManager) {
@@ -128,7 +151,13 @@ const Tasks = () => {
     setFormNotes("");
     setFormCategory("Technical");
     setFormDueDate(undefined);
-    setFormAssignee("");
+    setFormAssignee(players.length === 0 ? TEMPLATE_SENTINEL : "");
+  };
+
+  // When opening the dialog, default to template mode if there's no roster yet
+  const openCreateDialog = () => {
+    setFormAssignee(players.length === 0 ? TEMPLATE_SENTINEL : "");
+    setDialogOpen(true);
   };
 
   const handleCreate = async () => {
@@ -139,29 +168,88 @@ const Tasks = () => {
       return;
     }
     if (!formAssignee) {
-      toast.error("Please choose a player to assign this task to");
+      toast.error("Please choose who this task is for");
       return;
     }
     setSubmitting(true);
-    const { error } = await supabase.from("action_steps").insert({
-      team_id: teamId,
-      user_id: formAssignee,
-      assigned_by: user.id,
-      text: trimmed,
-      notes: formNotes.trim() || null,
-      category: formCategory,
-      due_date: formDueDate ? format(formDueDate, "yyyy-MM-dd") : null,
-      done: false,
-    });
-    setSubmitting(false);
-    if (error) {
-      toast.error("Failed to create task");
-      return;
+
+    if (formAssignee === TEMPLATE_SENTINEL) {
+      const { error } = await supabase.from("action_step_templates").insert({
+        team_id: teamId,
+        created_by: user.id,
+        text: trimmed,
+        notes: formNotes.trim() || null,
+        category: formCategory,
+        due_date: formDueDate ? format(formDueDate, "yyyy-MM-dd") : null,
+        active: true,
+      });
+      setSubmitting(false);
+      if (error) {
+        toast.error("Failed to save template");
+        return;
+      }
+      toast.success("Template saved · will auto-assign to new players");
+    } else {
+      const { error } = await supabase.from("action_steps").insert({
+        team_id: teamId,
+        user_id: formAssignee,
+        assigned_by: user.id,
+        text: trimmed,
+        notes: formNotes.trim() || null,
+        category: formCategory,
+        due_date: formDueDate ? format(formDueDate, "yyyy-MM-dd") : null,
+        done: false,
+      });
+      setSubmitting(false);
+      if (error) {
+        toast.error("Failed to create task");
+        return;
+      }
+      toast.success("Task assigned");
     }
-    toast.success("Task assigned");
+
     resetForm();
     setDialogOpen(false);
     fetchAll();
+  };
+
+  const handleDeleteTemplate = async (id: string) => {
+    if (!confirm("Delete this template? Tasks already assigned to players will remain.")) return;
+    const prev = templates;
+    setTemplates((p) => p.filter((t) => t.id !== id));
+    const { error } = await supabase.from("action_step_templates").delete().eq("id", id);
+    if (error) {
+      toast.error("Failed to delete template");
+      setTemplates(prev);
+    } else {
+      toast.success("Template deleted");
+    }
+  };
+
+  const handleApplyTemplateToRoster = async (tpl: TemplateRow) => {
+    if (!user || !teamId) return;
+    if (players.length === 0) {
+      toast.error("No players on the roster yet");
+      return;
+    }
+    if (!confirm(`Assign this task to all ${players.length} current player${players.length === 1 ? "" : "s"}?`)) return;
+    const rows = players.map((p) => ({
+      team_id: teamId,
+      user_id: p.user_id,
+      assigned_by: user.id,
+      text: tpl.text,
+      notes: tpl.notes,
+      category: tpl.category,
+      due_date: tpl.due_date,
+      done: false,
+    }));
+    const { error } = await supabase.from("action_steps").insert(rows);
+    if (error) {
+      toast.error("Failed to assign to roster");
+    } else {
+      toast.success(`Assigned to ${players.length} player${players.length === 1 ? "" : "s"}`);
+      fetchAll();
+    }
   };
 
   const toggleDone = async (task: TaskRow) => {
@@ -232,14 +320,14 @@ const Tasks = () => {
           </div>
         </div>
         {isCoachOrManager && (
-          <Button onClick={() => setDialogOpen(true)} size="sm" className="gap-1.5">
+          <Button onClick={openCreateDialog} size="sm" className="gap-1.5">
             <Plus className="w-4 h-4" /> New
           </Button>
         )}
       </div>
 
       {/* Empty state */}
-      {!loading && tasks.length === 0 && (
+      {!loading && tasks.length === 0 && templates.length === 0 && (
         <div className="bg-card rounded-xl p-8 shadow-[var(--card-shadow)] text-center space-y-2">
           <div className="w-12 h-12 rounded-full bg-muted mx-auto flex items-center justify-center">
             <ClipboardCheck className="w-6 h-6 text-muted-foreground" />
@@ -247,10 +335,76 @@ const Tasks = () => {
           <p className="font-medium text-card-foreground">No tasks yet</p>
           <p className="text-sm text-muted-foreground">
             {isCoachOrManager
-              ? "Create a task and assign it to a player to get started."
+              ? players.length === 0
+                ? "No players have joined yet. Prebuild your season plan as templates — they'll auto-assign to every player who joins."
+                : "Create a task and assign it to a player to get started."
               : "Your coach hasn't assigned you any tasks yet."}
           </p>
         </div>
+      )}
+
+      {/* Preseason Templates (coach/manager) */}
+      {isCoachOrManager && templates.length > 0 && (
+        <section className="space-y-3">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" />
+              Preseason Templates · {templates.length}
+            </h2>
+            <p className="text-[10px] text-muted-foreground">Auto-assigns to new players</p>
+          </div>
+          <div className="space-y-2">
+            {templates.map((tpl) => {
+              const due = formatDue(tpl.due_date);
+              return (
+                <article
+                  key={tpl.id}
+                  className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] border border-dashed border-border space-y-2"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="font-medium text-sm text-card-foreground leading-snug">{tpl.text}</p>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {players.length > 0 && (
+                        <button
+                          onClick={() => handleApplyTemplateToRoster(tpl)}
+                          className="text-muted-foreground hover:text-primary p-1"
+                          aria-label="Apply to current roster"
+                          title="Apply to current roster"
+                        >
+                          <Send className="w-4 h-4" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleDeleteTemplate(tpl.id)}
+                        className="text-muted-foreground hover:text-destructive p-1"
+                        aria-label="Delete template"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  {tpl.notes && (
+                    <p className="text-xs text-muted-foreground whitespace-pre-line">{tpl.notes}</p>
+                  )}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary inline-flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" /> Template
+                    </span>
+                    <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full", CATEGORY_STYLES[tpl.category])}>
+                      {tpl.category}
+                    </span>
+                    {due && (
+                      <span className="text-[10px] font-medium px-2 py-0.5 rounded-full inline-flex items-center gap-1 bg-muted text-muted-foreground">
+                        <CalendarIcon className="w-3 h-3" />
+                        {due.label}
+                      </span>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
       )}
 
       {/* Open tasks */}
@@ -400,9 +554,12 @@ const Tasks = () => {
               <Label htmlFor="task-assignee">Assign to</Label>
               <Select value={formAssignee} onValueChange={setFormAssignee}>
                 <SelectTrigger id="task-assignee">
-                  <SelectValue placeholder={players.length ? "Select a player" : "No players on team yet"} />
+                  <SelectValue placeholder="Select an assignee" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value={TEMPLATE_SENTINEL}>
+                    ✨ All future players (template)
+                  </SelectItem>
                   {players.map((p) => (
                     <SelectItem key={p.user_id} value={p.user_id}>
                       {p.display_name}
@@ -410,6 +567,11 @@ const Tasks = () => {
                   ))}
                 </SelectContent>
               </Select>
+              {formAssignee === TEMPLATE_SENTINEL && (
+                <p className="text-[11px] text-muted-foreground">
+                  Saved as a preseason template. Auto-assigns to every player who joins your team.
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -472,7 +634,11 @@ const Tasks = () => {
               Cancel
             </Button>
             <Button onClick={handleCreate} disabled={submitting}>
-              {submitting ? "Creating..." : "Assign Task"}
+              {submitting
+                ? "Saving..."
+                : formAssignee === TEMPLATE_SENTINEL
+                ? "Save Template"
+                : "Assign Task"}
             </Button>
           </DialogFooter>
         </DialogContent>
