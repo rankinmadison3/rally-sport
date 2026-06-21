@@ -208,7 +208,7 @@ const TeamCalendar = () => {
                     {hasWin && <div className="w-2 h-2 rounded-full bg-success" />}
                     {hasLoss && <div className="w-2 h-2 rounded-full bg-destructive" />}
                     {hasAbsence && <XCircle className="w-2.5 h-2.5 text-destructive" />}
-                    {hasPractice && !hasGame && <div className="w-1.5 h-1.5 rounded-full bg-success" />}
+                    {hasPractice && !hasGame && <Dumbbell className="w-2.5 h-2.5 text-success" />}
                     {hasOther && !hasGame && !hasPractice && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
                   </div>
                 )}
