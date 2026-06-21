@@ -9,7 +9,16 @@ import logo from "@/assets/rally-sport-logo.png";
 
 const AppLayout = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
-  const { user, loading } = useAuth();
+  const { user, loading, role } = useAuth();
+  const [tutorialOpen, setTutorialOpen] = useState(false);
+
+  useEffect(() => {
+    if (!loading && user && role && !hasSeenOrientation(user.id)) {
+      const t = setTimeout(() => setTutorialOpen(true), 400);
+      return () => clearTimeout(t);
+    }
+  }, [loading, user, role]);
+
 
   // Login page: render bare children (no shell)
   if (location.pathname === "/login") {
