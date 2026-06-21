@@ -1,14 +1,24 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import DesktopSidebar from "./DesktopSidebar";
 
 import MobileBottomNav from "./MobileBottomNav";
+import OrientationTutorial, { hasSeenOrientation } from "./OrientationTutorial";
 import logo from "@/assets/rally-sport-logo.png";
 
 const AppLayout = ({ children }: { children: ReactNode }) => {
   const location = useLocation();
-  const { user, loading } = useAuth();
+  const { user, loading, role } = useAuth();
+  const [tutorialOpen, setTutorialOpen] = useState(false);
+
+  useEffect(() => {
+    if (!loading && user && role && !hasSeenOrientation(user.id)) {
+      const t = setTimeout(() => setTutorialOpen(true), 400);
+      return () => clearTimeout(t);
+    }
+  }, [loading, user, role]);
+
 
   // Login page: render bare children (no shell)
   if (location.pathname === "/login") {
@@ -53,8 +63,10 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
           </div>
         </main>
       </div>
+      <OrientationTutorial open={tutorialOpen} onOpenChange={setTutorialOpen} />
     </div>
   );
+
 };
 
 export default AppLayout;

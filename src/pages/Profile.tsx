@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   User as UserIcon, Mail, Shield, LogOut, Loader2, Camera, Pencil, X,
-  Phone, Cake, Ruler, Weight, Trophy, Users as UsersIcon, AlertCircle,
+  Phone, Cake, Ruler, Weight, Trophy, Users as UsersIcon, AlertCircle, PlayCircle,
 } from "lucide-react";
+import OrientationTutorial from "@/components/OrientationTutorial";
 import { z } from "zod";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -74,6 +75,7 @@ const Profile = () => {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [tutorialOpen, setTutorialOpen] = useState(false);
 
   const [form, setForm] = useState<ProfileForm>(emptyForm);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -579,10 +581,21 @@ const Profile = () => {
       )}
 
       {!editing && (
-        <Button onClick={handleSignOut} variant="destructive" className="w-full gap-2">
-          <LogOut className="w-4 h-4" /> Log out
-        </Button>
+        <div className="space-y-2">
+          <Button
+            onClick={() => setTutorialOpen(true)}
+            variant="outline"
+            className="w-full gap-2"
+          >
+            <PlayCircle className="w-4 h-4" /> Replay orientation tutorial
+          </Button>
+          <Button onClick={handleSignOut} variant="destructive" className="w-full gap-2">
+            <LogOut className="w-4 h-4" /> Log out
+          </Button>
+        </div>
       )}
+
+      <OrientationTutorial open={tutorialOpen} onOpenChange={setTutorialOpen} />
     </div>
   );
 };
