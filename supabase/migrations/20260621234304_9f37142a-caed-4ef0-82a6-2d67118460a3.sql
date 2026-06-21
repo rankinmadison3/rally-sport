@@ -1,0 +1,2 @@
+CREATE POLICY "Managers can manage all steps" ON public.action_steps FOR ALL USING (public.has_role(auth.uid(), 'manager')) WITH CHECK (public.has_role(auth.uid(), 'manager'));
+CREATE POLICY "Players can insert own steps" ON public.action_steps FOR INSERT WITH CHECK (auth.uid() = user_id);
