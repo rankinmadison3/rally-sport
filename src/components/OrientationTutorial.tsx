@@ -59,6 +59,7 @@ const ROLE_STEPS: Record<AppRole, Step[]> = {
   manager: [
     { icon: ClipboardCheck, title: "Tasks", body: "Monitor assigned action steps across the roster and help keep players accountable.", target: '[data-tour="/tasks"]', route: "/tasks" },
     { icon: MessageCircle, title: "Feedback", body: "Review team feedback trends and survey results to help the coach make decisions.", target: '[data-tour="/feedback"]', route: "/feedback" },
+    { icon: Trophy, title: "Season Record", body: "Log wins and losses here. The team progress bar updates automatically — the Dashboard also flags games that need a result.", target: '[data-tour="/season"]', route: "/season" },
     { icon: Sparkles, title: "Reflections", body: "See aggregate signals from player reflections to support team well-being and morale.", target: '[data-tour="/reflections"]', route: "/reflections" },
     { icon: Users, title: "Team Coordination", body: "Use chat and calendar to coordinate logistics, share updates, and keep the team aligned.", target: '[data-tour="/chat"]', route: "/chat" },
   ],
