@@ -6,6 +6,7 @@ import {
   ClipboardCheck,
   Sparkles,
   Trophy,
+  Inbox,
   LucideIcon,
 } from "lucide-react";
 
@@ -14,6 +15,7 @@ export interface NavItem {
   label: string;
   icon: LucideIcon;
   desktopOnly?: boolean;
+  staffOnly?: boolean;
 }
 
 // Items shown in the mobile bottom nav
@@ -28,9 +30,10 @@ export const mobileNavItems: NavItem[] = [
 export const desktopNavItems: NavItem[] = [
   { path: "/", icon: LayoutDashboard, label: "Dashboard" },
   { path: "/feedback", icon: MessageCircle, label: "Feedback" },
+  { path: "/inbox", icon: Inbox, label: "Feedback Inbox", staffOnly: true },
   { path: "/tasks", icon: ClipboardCheck, label: "Tasks" },
   { path: "/calendar", icon: Calendar, label: "Calendar" },
-  { path: "/season", icon: Trophy, label: "Season Record" },
+  { path: "/season", icon: Trophy, label: "Season Record", staffOnly: true },
   { path: "/chat", icon: User, label: "Chat" },
   { path: "/reflections", icon: Sparkles, label: "Reflections" },
 ];
@@ -38,6 +41,7 @@ export const desktopNavItems: NavItem[] = [
 export const pageTitles: Record<string, { title: string; subtitle?: string }> = {
   "/": { title: "Dashboard", subtitle: "Overview of your team" },
   "/feedback": { title: "Feedback", subtitle: "Create, send, and track team feedback" },
+  "/inbox": { title: "Feedback Inbox", subtitle: "Player comments and reflections" },
   "/tasks": { title: "Tasks", subtitle: "Assignments and progress" },
   "/calendar": { title: "Team Calendar", subtitle: "Games, practices and events" },
   "/season": { title: "Season Record", subtitle: "Log wins and losses" },
