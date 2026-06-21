@@ -634,7 +634,11 @@ const Tasks = () => {
               Cancel
             </Button>
             <Button onClick={handleCreate} disabled={submitting}>
-              {submitting ? "Creating..." : "Assign Task"}
+              {submitting
+                ? "Saving..."
+                : formAssignee === TEMPLATE_SENTINEL
+                ? "Save Template"
+                : "Assign Task"}
             </Button>
           </DialogFooter>
         </DialogContent>
