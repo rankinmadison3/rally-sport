@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Trophy, XCircle, Clock, MapPin, ChevronLeft, ChevronRight, Plus, Download, Pencil, Calendar as CalendarIcon, Users } from "lucide-react";
+import { Trophy, XCircle, Clock, MapPin, ChevronLeft, ChevronRight, Plus, Download, Pencil, Calendar as CalendarIcon, Users, Dumbbell } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -208,7 +208,7 @@ const TeamCalendar = () => {
                     {hasWin && <div className="w-2 h-2 rounded-full bg-success" />}
                     {hasLoss && <div className="w-2 h-2 rounded-full bg-destructive" />}
                     {hasAbsence && <XCircle className="w-2.5 h-2.5 text-destructive" />}
-                    {hasPractice && !hasGame && <div className="w-1.5 h-1.5 rounded-full bg-success" />}
+                    {hasPractice && !hasGame && <Dumbbell className="w-2.5 h-2.5 text-success" />}
                     {hasOther && !hasGame && !hasPractice && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
                   </div>
                 )}
@@ -219,7 +219,8 @@ const TeamCalendar = () => {
 
         <div className="flex gap-4 mt-3 pt-3 border-t border-border flex-wrap">
           <div className="flex items-center gap-1 text-[10px] text-muted-foreground"><Trophy className="w-3 h-3 text-primary" /> Game</div>
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground"><div className="w-2 h-2 rounded-full bg-success" /> Win / Practice</div>
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground"><div className="w-2 h-2 rounded-full bg-success" /> Win</div>
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground"><Dumbbell className="w-3 h-3 text-success" /> Practice</div>
           <div className="flex items-center gap-1 text-[10px] text-muted-foreground"><div className="w-2 h-2 rounded-full bg-destructive" /> Loss</div>
           <div className="flex items-center gap-1 text-[10px] text-muted-foreground"><XCircle className="w-3 h-3 text-destructive" /> Absence</div>
           <div className="flex items-center gap-1 text-[10px] text-muted-foreground"><div className="w-2 h-2 rounded-full bg-primary" /> Other</div>
@@ -245,7 +246,8 @@ const TeamCalendar = () => {
                   <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center shrink-0">
                     {evt.event_type === "game" ? <Trophy className="w-4 h-4 text-primary" /> :
                      evt.event_type === "absence" ? <XCircle className="w-4 h-4 text-destructive" /> :
-                     <CalendarIcon className="w-4 h-4 text-success" />}
+                     evt.event_type === "practice" ? <Dumbbell className="w-4 h-4 text-success" /> :
+                     <CalendarIcon className="w-4 h-4 text-muted-foreground" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
