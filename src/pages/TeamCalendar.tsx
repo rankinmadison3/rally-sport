@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Trophy, XCircle, Clock, MapPin, ChevronLeft, ChevronRight, Plus, Download, Pencil, Calendar as CalendarIcon, Users } from "lucide-react";
+import { Trophy, XCircle, Clock, MapPin, ChevronLeft, ChevronRight, Plus, Download, Pencil, Calendar as CalendarIcon, Users, Dumbbell } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
