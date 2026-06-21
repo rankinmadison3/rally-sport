@@ -104,6 +104,16 @@ const Tasks = () => {
     }
     setTasks((taskData as TaskRow[]) || []);
 
+    // Templates (coach/manager only)
+    if (isCoachOrManager) {
+      const { data: tplData } = await supabase
+        .from("action_step_templates")
+        .select("id, text, notes, category, due_date, active, created_at")
+        .eq("team_id", teamId)
+        .order("created_at", { ascending: false });
+      setTemplates((tplData as TemplateRow[]) || []);
+    }
+
     // Players list (for coach assignment + for displaying assignee names)
     if (isCoachOrManager) {
       const { data: members } = await supabase
