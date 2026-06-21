@@ -581,10 +581,21 @@ const Profile = () => {
       )}
 
       {!editing && (
-        <Button onClick={handleSignOut} variant="destructive" className="w-full gap-2">
-          <LogOut className="w-4 h-4" /> Log out
-        </Button>
+        <div className="space-y-2">
+          <Button
+            onClick={() => setTutorialOpen(true)}
+            variant="outline"
+            className="w-full gap-2"
+          >
+            <PlayCircle className="w-4 h-4" /> Replay orientation tutorial
+          </Button>
+          <Button onClick={handleSignOut} variant="destructive" className="w-full gap-2">
+            <LogOut className="w-4 h-4" /> Log out
+          </Button>
+        </div>
       )}
+
+      <OrientationTutorial open={tutorialOpen} onOpenChange={setTutorialOpen} />
     </div>
   );
 };
