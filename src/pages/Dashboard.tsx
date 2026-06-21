@@ -287,7 +287,67 @@ const Dashboard = () => {
         <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
       </button>
 
-      <div className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] space-y-3">
+      {/* Unlogged games (coach/manager) */}
+      {(role === "coach" || role === "manager") && unloggedGames.length > 0 && (
+        <div className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] space-y-3 border border-destructive/20">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-destructive/10 flex items-center justify-center">
+                <AlertCircle className="w-4 h-4 text-destructive" />
+              </div>
+              <h2 className="font-display font-semibold text-card-foreground">
+                Log Result · {unloggedGames.length}
+              </h2>
+            </div>
+            <button
+              onClick={() => navigate("/season")}
+              className="text-xs text-primary font-medium hover:underline"
+            >
+              Manage season →
+            </button>
+          </div>
+          <div className="space-y-2">
+            {unloggedGames.map((g) => (
+              <div
+                key={g.id}
+                className="flex items-center gap-3 bg-muted/40 rounded-lg p-2.5"
+              >
+                <div className="flex flex-col items-center justify-center w-10 shrink-0">
+                  <span className="text-[9px] font-semibold text-muted-foreground uppercase">
+                    {format(parseISO(g.event_date), "MMM")}
+                  </span>
+                  <span className="text-sm font-bold text-foreground leading-none">
+                    {format(parseISO(g.event_date), "d")}
+                  </span>
+                </div>
+                <p className="flex-1 text-sm font-medium text-card-foreground truncate">
+                  {g.label || "Game"}
+                </p>
+                <div className="flex gap-1.5 shrink-0">
+                  <button
+                    onClick={() => logResult(g.id, "win")}
+                    className="px-2.5 py-1 rounded-md bg-success/10 text-success text-xs font-semibold hover:bg-success/20 transition-colors inline-flex items-center gap-1"
+                  >
+                    <Check className="w-3.5 h-3.5" /> Win
+                  </button>
+                  <button
+                    onClick={() => logResult(g.id, "loss")}
+                    className="px-2.5 py-1 rounded-md bg-destructive/10 text-destructive text-xs font-semibold hover:bg-destructive/20 transition-colors inline-flex items-center gap-1"
+                  >
+                    <XIcon className="w-3.5 h-3.5" /> Loss
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div
+        className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] space-y-3 cursor-pointer hover:bg-accent/30 transition-colors"
+        onClick={() => (role === "coach" || role === "manager") && navigate("/season")}
+        role={(role === "coach" || role === "manager") ? "button" : undefined}
+      >
         <div className="flex items-center justify-between">
           <h2 className="font-display font-semibold text-card-foreground">Season Progress</h2>
           <div className="flex items-center gap-1.5">
