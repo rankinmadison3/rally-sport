@@ -195,16 +195,23 @@ const Demo = () => {
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={seed} disabled={busy !== null || !teamId}>
-            {busy === "seed" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            Load demo data
-          </Button>
-          <Button onClick={clear} disabled={busy !== null || !teamId} variant="outline">
-            {busy === "clear" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-            Clear demo data
-          </Button>
-        </div>
+        {role !== "coach" && role !== "manager" ? (
+          <div className="rounded-lg bg-muted text-muted-foreground p-3 text-xs">
+            Demo seeding requires a coach or manager account — task creation is restricted to staff
+            by row-level security. Sign in as your demo coach or manager to use this page.
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={seed} disabled={busy !== null || !teamId}>
+              {busy === "seed" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              Load demo data
+            </Button>
+            <Button onClick={clear} disabled={busy !== null || !teamId} variant="outline">
+              {busy === "clear" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+              Clear demo data
+            </Button>
+          </div>
+        )}
 
         <div className="text-xs text-muted-foreground space-y-1 border-t border-border pt-3">
           <p className="font-semibold text-foreground">Will insert:</p>
