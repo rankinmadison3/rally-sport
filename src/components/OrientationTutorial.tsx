@@ -46,6 +46,7 @@ const ROLE_STEPS: Record<AppRole, Step[]> = {
   coach: [
     { icon: ClipboardCheck, title: "Tasks & Action Steps", body: "Assign technical, mental, physical, and teamwork drills to individual players or the whole roster. Track who's done what.", target: '[data-tour="/tasks"]', route: "/tasks" },
     { icon: MessageCircle, title: "Feedback", body: "Build surveys, mood check-ins, and rating forms. Anonymous suggestions help you hear what players really think.", target: '[data-tour="/feedback"]', route: "/feedback" },
+    { icon: Trophy, title: "Season Record", body: "Log wins and losses here. Your team's progress bar and stats update automatically — the Dashboard also prompts you to log any games that have passed.", target: '[data-tour="/season"]', route: "/season" },
     { icon: Sparkles, title: "Reflections", body: "Read player reflections after games and practices to spot trends, fatigue, or breakthroughs early.", target: '[data-tour="/reflections"]', route: "/reflections" },
     { icon: Users, title: "Roster & Team Code", body: "Share your 6-character team code from Profile so players and managers can join your team.", target: '[data-tour="/profile"]', route: "/profile" },
   ],
