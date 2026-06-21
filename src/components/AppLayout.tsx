@@ -1,9 +1,10 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import DesktopSidebar from "./DesktopSidebar";
 
 import MobileBottomNav from "./MobileBottomNav";
+import OrientationTutorial, { hasSeenOrientation } from "./OrientationTutorial";
 import logo from "@/assets/rally-sport-logo.png";
 
 const AppLayout = ({ children }: { children: ReactNode }) => {
