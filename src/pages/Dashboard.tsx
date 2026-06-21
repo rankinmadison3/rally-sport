@@ -20,6 +20,43 @@ const Dashboard = () => {
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState("");
   const [collapsed, setCollapsed] = useState(false);
+  const [unloggedGames, setUnloggedGames] = useState<{ id: string; label: string | null; event_date: string }[]>([]);
+
+  const fetchUnloggedGames = async () => {
+    if (!teamId || !(role === "coach" || role === "manager")) return;
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const { data } = await supabase
+      .from("calendar_events")
+      .select("id, label, event_date")
+      .eq("team_id", teamId)
+      .eq("event_type", "game")
+      .eq("is_regular_season", true)
+      .is("game_result", null)
+      .lte("event_date", todayStr)
+      .order("event_date", { ascending: false })
+      .limit(3);
+    setUnloggedGames(data ?? []);
+  };
+
+  const logResult = async (id: string, result: "win" | "loss") => {
+    if (!teamId) return;
+    const prev = unloggedGames;
+    setUnloggedGames((g) => g.filter((x) => x.id !== id));
+    const { error } = await supabase
+      .from("calendar_events")
+      .update({ game_result: result })
+      .eq("id", id);
+    if (error) {
+      toast.error("Failed to log result");
+      setUnloggedGames(prev);
+      return;
+    }
+    toast.success(`Logged as ${result}`);
+    // Refresh team record
+    const { data: team } = await supabase
+      .from("teams").select("season_wins, season_losses").eq("id", teamId).single();
+    if (team) { setWins(team.season_wins); setLosses(team.season_losses); }
+  };
 
   useEffect(() => {
     if (!teamId) return;
