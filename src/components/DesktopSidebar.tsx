@@ -7,9 +7,11 @@ import { toast } from "sonner";
 import logo from "@/assets/rally-sport-logo.png";
 
 const DesktopSidebar = () => {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const navigate = useNavigate();
   const initial = user?.email?.charAt(0).toUpperCase() ?? "?";
+  const isStaff = role === "coach" || role === "manager";
+  const navItems = desktopNavItems.filter((item) => !item.staffOnly || isStaff);
 
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();
