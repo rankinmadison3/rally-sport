@@ -28,7 +28,7 @@ const DesktopSidebar = () => {
         <img src={logo} alt="Rally Sport" className="h-10 w-auto object-contain" />
       </div>
       <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-        {desktopNavItems.map((item) => (
+        {navItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
