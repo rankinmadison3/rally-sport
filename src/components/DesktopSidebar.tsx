@@ -31,6 +31,7 @@ const DesktopSidebar = () => {
             key={item.path}
             to={item.path}
             end={item.path === "/"}
+            data-tour={item.path}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 isActive
@@ -47,6 +48,7 @@ const DesktopSidebar = () => {
       <div className="p-3 border-t border-border space-y-1">
         <NavLink
           to="/profile"
+          data-tour="/profile"
           className={({ isActive }) =>
             `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
               isActive

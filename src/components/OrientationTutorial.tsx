@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, MessageCircle, Calendar, MessageSquare,
   ClipboardCheck, Sparkles, User as UserIcon, Users, Trophy,
   ChevronLeft, ChevronRight, X, Check, LucideIcon,
 } from "lucide-react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -14,6 +14,10 @@ interface Step {
   icon: LucideIcon;
   title: string;
   body: string;
+  /** CSS selector for the element to spotlight. Omit for centered intro/outro. */
+  target?: string;
+  /** Optional route to navigate to before showing this step. */
+  route?: string;
 }
 
 const WELCOME: Record<AppRole, { title: string; body: string }> = {
@@ -32,30 +36,30 @@ const WELCOME: Record<AppRole, { title: string; body: string }> = {
 };
 
 const SHARED_STEPS: Step[] = [
-  { icon: LayoutDashboard, title: "Dashboard", body: "Your home base. See today's events, latest team activity, and quick links to everything you use most." },
-  { icon: Calendar, title: "Team Calendar", body: "Games, practices, and team events in one timeline. Tap any event for details, location, and game results." },
-  { icon: MessageSquare, title: "Chat", body: "Real-time team messaging. Use direct messages with teammates or group channels for the whole team, with pinned announcements at the top." },
-  { icon: UserIcon, title: "Profile", body: "Manage your photo, contact info, and personal details. You can replay this tutorial anytime from here." },
+  { icon: LayoutDashboard, title: "Dashboard", body: "Your home base. See today's events, latest team activity, and quick links to everything you use most.", target: '[data-tour="/"]', route: "/" },
+  { icon: Calendar, title: "Team Calendar", body: "Games, practices, and team events in one timeline. Tap any event for details, location, and game results.", target: '[data-tour="/calendar"]', route: "/calendar" },
+  { icon: MessageSquare, title: "Chat", body: "Real-time team messaging. Direct messages with teammates or group channels for the whole team, with pinned announcements at the top.", target: '[data-tour="/chat"]', route: "/chat" },
+  { icon: UserIcon, title: "Profile", body: "Manage your photo, contact info, and personal details. You can replay this tutorial anytime from here.", target: '[data-tour="/profile"]', route: "/profile" },
 ];
 
 const ROLE_STEPS: Record<AppRole, Step[]> = {
   coach: [
-    { icon: ClipboardCheck, title: "Tasks & Action Steps", body: "Assign technical, mental, physical, and teamwork drills to individual players or the whole roster. Track who's done what." },
-    { icon: MessageCircle, title: "Feedback", body: "Build surveys, mood check-ins, and rating forms. Anonymous suggestions help you hear what players really think." },
-    { icon: Sparkles, title: "Reflections", body: "Read player reflections after games and practices to spot trends, fatigue, or breakthroughs early." },
-    { icon: Users, title: "Roster & Team Code", body: "Share your 6-character team code from Profile so players and managers can join your team." },
+    { icon: ClipboardCheck, title: "Tasks & Action Steps", body: "Assign technical, mental, physical, and teamwork drills to individual players or the whole roster. Track who's done what.", target: '[data-tour="/tasks"]', route: "/tasks" },
+    { icon: MessageCircle, title: "Feedback", body: "Build surveys, mood check-ins, and rating forms. Anonymous suggestions help you hear what players really think.", target: '[data-tour="/feedback"]', route: "/feedback" },
+    { icon: Sparkles, title: "Reflections", body: "Read player reflections after games and practices to spot trends, fatigue, or breakthroughs early.", target: '[data-tour="/reflections"]', route: "/reflections" },
+    { icon: Users, title: "Roster & Team Code", body: "Share your 6-character team code from Profile so players and managers can join your team.", target: '[data-tour="/profile"]', route: "/profile" },
   ],
   player: [
-    { icon: ClipboardCheck, title: "Your Tasks", body: "See action steps your coach has assigned across Technical, Mental, Physical, and Teamwork. Mark them done as you go." },
-    { icon: MessageCircle, title: "Feedback", body: "Fill out quick mood and rating surveys, or send anonymous suggestions to your coach." },
-    { icon: Sparkles, title: "Reflections", body: "A private space for personal check-ins. Notice patterns in your performance and mindset over time." },
-    { icon: Trophy, title: "Your Player Profile", body: "Add your jersey number, position, height, weight, and emergency contact so your coach has what they need." },
+    { icon: ClipboardCheck, title: "Your Tasks", body: "See action steps your coach has assigned across Technical, Mental, Physical, and Teamwork. Mark them done as you go.", target: '[data-tour="/tasks"]', route: "/tasks" },
+    { icon: MessageCircle, title: "Feedback", body: "Fill out quick mood and rating surveys, or send anonymous suggestions to your coach.", target: '[data-tour="/feedback"]', route: "/feedback" },
+    { icon: Sparkles, title: "Reflections", body: "A private space for personal check-ins. Notice patterns in your performance and mindset over time.", target: '[data-tour="/reflections"]', route: "/reflections" },
+    { icon: Trophy, title: "Your Player Profile", body: "Add your jersey number, position, height, weight, and emergency contact so your coach has what they need.", target: '[data-tour="/profile"]', route: "/profile" },
   ],
   manager: [
-    { icon: ClipboardCheck, title: "Tasks", body: "Monitor assigned action steps across the roster and help keep players accountable." },
-    { icon: MessageCircle, title: "Feedback", body: "Review team feedback trends and survey results to help the coach make decisions." },
-    { icon: Sparkles, title: "Reflections", body: "See aggregate signals from player reflections to support team well-being and morale." },
-    { icon: Users, title: "Team Coordination", body: "Use chat and calendar to coordinate logistics, share updates, and keep the team aligned." },
+    { icon: ClipboardCheck, title: "Tasks", body: "Monitor assigned action steps across the roster and help keep players accountable.", target: '[data-tour="/tasks"]', route: "/tasks" },
+    { icon: MessageCircle, title: "Feedback", body: "Review team feedback trends and survey results to help the coach make decisions.", target: '[data-tour="/feedback"]', route: "/feedback" },
+    { icon: Sparkles, title: "Reflections", body: "See aggregate signals from player reflections to support team well-being and morale.", target: '[data-tour="/reflections"]', route: "/reflections" },
+    { icon: Users, title: "Team Coordination", body: "Use chat and calendar to coordinate logistics, share updates, and keep the team aligned.", target: '[data-tour="/chat"]', route: "/chat" },
   ],
 };
 
@@ -74,9 +78,17 @@ interface Props {
   onOpenChange: (open: boolean) => void;
 }
 
+interface Rect { top: number; left: number; width: number; height: number; }
+
+const PADDING = 8;
+const TOOLTIP_W = 340;
+const TOOLTIP_GAP = 14;
+
 const OrientationTutorial = ({ open, onOpenChange }: Props) => {
   const { user, role } = useAuth();
+  const navigate = useNavigate();
   const [index, setIndex] = useState(0);
+  const [rect, setRect] = useState<Rect | null>(null);
 
   const activeRole: AppRole = (role ?? "player") as AppRole;
   const welcome = WELCOME[activeRole];
@@ -89,38 +101,168 @@ const OrientationTutorial = ({ open, onOpenChange }: Props) => {
 
   useEffect(() => { if (open) setIndex(0); }, [open]);
 
+  const step = steps[index];
+
+  // Navigate when step changes
+  useEffect(() => {
+    if (!open) return;
+    if (step.route) navigate(step.route);
+  }, [open, index]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Track the target element's rect (and re-measure on resize/scroll)
+  useLayoutEffect(() => {
+    if (!open || !step.target) { setRect(null); return; }
+    let raf = 0;
+    const measure = () => {
+      const el = document.querySelector(step.target!) as HTMLElement | null;
+      if (!el) { setRect(null); return; }
+      const r = el.getBoundingClientRect();
+      setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
+    };
+    // Wait one frame for navigation/render
+    raf = requestAnimationFrame(() => {
+      measure();
+      // Re-measure after a brief moment for slow renders
+      setTimeout(measure, 120);
+    });
+    window.addEventListener("resize", measure);
+    window.addEventListener("scroll", measure, true);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("scroll", measure, true);
+    };
+  }, [open, index, step.target]);
+
+  if (!open) return null;
+
   const close = () => {
     if (user) markOrientationSeen(user.id);
     onOpenChange(false);
   };
 
-  const step = steps[index];
   const Icon = step.icon;
   const isLast = index === steps.length - 1;
+  const isFirst = index === 0;
+
+  // Tooltip positioning
+  const vw = typeof window !== "undefined" ? window.innerWidth : 1024;
+  const vh = typeof window !== "undefined" ? window.innerHeight : 768;
+
+  let tooltipStyle: React.CSSProperties;
+  let centered = false;
+
+  if (rect) {
+    // Prefer right side of target on wide viewports, otherwise below
+    const tooltipW = Math.min(TOOLTIP_W, vw - 32);
+    const tooltipH = 280; // estimate
+    const spaceRight = vw - (rect.left + rect.width);
+    const placeRight = spaceRight >= tooltipW + TOOLTIP_GAP + 16 && vw >= 768;
+
+    if (placeRight) {
+      tooltipStyle = {
+        position: "fixed",
+        top: Math.max(16, Math.min(vh - tooltipH - 16, rect.top + rect.height / 2 - tooltipH / 2)),
+        left: rect.left + rect.width + TOOLTIP_GAP,
+        width: tooltipW,
+      };
+    } else {
+      // Place below or above depending on space
+      const spaceBelow = vh - (rect.top + rect.height);
+      const placeBelow = spaceBelow >= tooltipH + TOOLTIP_GAP + 16;
+      const top = placeBelow
+        ? rect.top + rect.height + TOOLTIP_GAP
+        : Math.max(16, rect.top - tooltipH - TOOLTIP_GAP);
+      const left = Math.max(16, Math.min(vw - tooltipW - 16, rect.left + rect.width / 2 - tooltipW / 2));
+      tooltipStyle = { position: "fixed", top, left, width: tooltipW };
+    }
+  } else {
+    centered = true;
+    tooltipStyle = {
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      width: Math.min(TOOLTIP_W + 40, vw - 32),
+    };
+  }
+
+  // Spotlight: 4 dim overlays around the rect, leaving the target visible
+  const dim = "rgba(15, 23, 42, 0.62)";
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) close(); else onOpenChange(true); }}>
-      <DialogContent className="max-w-md p-0 overflow-hidden gap-0 bg-card border-border">
+    <div className="fixed inset-0 z-[100]" aria-modal="true" role="dialog">
+      {rect ? (
+        <>
+          {/* Top */}
+          <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: Math.max(0, rect.top - PADDING), background: dim }} onClick={close} />
+          {/* Bottom */}
+          <div style={{ position: "fixed", top: rect.top + rect.height + PADDING, left: 0, right: 0, bottom: 0, background: dim }} onClick={close} />
+          {/* Left */}
+          <div style={{ position: "fixed", top: Math.max(0, rect.top - PADDING), left: 0, width: Math.max(0, rect.left - PADDING), height: rect.height + PADDING * 2, background: dim }} onClick={close} />
+          {/* Right */}
+          <div style={{ position: "fixed", top: Math.max(0, rect.top - PADDING), left: rect.left + rect.width + PADDING, right: 0, height: rect.height + PADDING * 2, background: dim }} onClick={close} />
+          {/* Highlight ring */}
+          <div
+            style={{
+              position: "fixed",
+              top: rect.top - PADDING,
+              left: rect.left - PADDING,
+              width: rect.width + PADDING * 2,
+              height: rect.height + PADDING * 2,
+              border: "2px solid hsl(var(--primary))",
+              borderRadius: 14,
+              boxShadow: "0 0 0 4px hsl(var(--primary) / 0.25), 0 12px 32px -8px rgba(0,0,0,0.35)",
+              pointerEvents: "none",
+              transition: "all 220ms cubic-bezier(0.2, 0.8, 0.2, 1)",
+            }}
+          />
+        </>
+      ) : (
+        <div className="fixed inset-0" style={{ background: dim }} onClick={close} />
+      )}
+
+      {/* Tooltip / step card */}
+      <div
+        style={tooltipStyle}
+        className="bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+      >
         <button
           onClick={close}
-          className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center hover:bg-muted text-muted-foreground transition-colors"
+          className="absolute top-2.5 right-2.5 z-10 w-7 h-7 rounded-full flex items-center justify-center hover:bg-muted text-muted-foreground transition-colors"
           aria-label="Close tutorial"
         >
           <X className="w-4 h-4" />
         </button>
 
-        <div className="bg-primary text-primary-foreground px-6 pt-8 pb-10 flex flex-col items-center text-center">
-          <div className="w-16 h-16 rounded-2xl bg-primary-foreground/15 backdrop-blur flex items-center justify-center mb-3">
-            <Icon className="w-8 h-8" />
+        {centered ? (
+          <div className="bg-primary text-primary-foreground px-6 pt-7 pb-8 flex flex-col items-center text-center">
+            <div className="w-14 h-14 rounded-2xl bg-primary-foreground/15 backdrop-blur flex items-center justify-center mb-2.5">
+              <Icon className="w-7 h-7" />
+            </div>
+            <p className="text-[10px] uppercase tracking-widest opacity-80 font-semibold">
+              Step {index + 1} of {steps.length}
+            </p>
+            <h2 className="text-xl font-bold font-display mt-1">{step.title}</h2>
           </div>
-          <p className="text-[11px] uppercase tracking-widest opacity-80 font-semibold">
-            Step {index + 1} of {steps.length}
-          </p>
-          <h2 className="text-2xl font-bold font-display mt-1">{step.title}</h2>
-        </div>
+        ) : (
+          <div className="px-5 pt-5 pb-3 flex items-start gap-3 border-b border-border">
+            <div className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shrink-0">
+              <Icon className="w-5 h-5" />
+            </div>
+            <div className="flex-1 min-w-0 pr-6">
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
+                Step {index + 1} of {steps.length}
+              </p>
+              <h2 className="text-base font-bold font-display text-card-foreground leading-tight mt-0.5">
+                {step.title}
+              </h2>
+            </div>
+          </div>
+        )}
 
-        <div className="px-6 py-6 space-y-5">
-          <p className="text-sm text-card-foreground leading-relaxed text-center">
+        <div className="px-5 py-4 space-y-4">
+          <p className={`text-sm text-card-foreground leading-relaxed ${centered ? "text-center" : ""}`}>
             {step.body}
           </p>
 
@@ -131,19 +273,19 @@ const OrientationTutorial = ({ open, onOpenChange }: Props) => {
                 onClick={() => setIndex(i)}
                 aria-label={`Go to step ${i + 1}`}
                 className={`h-1.5 rounded-full transition-all ${
-                  i === index ? "w-6 bg-primary" : "w-1.5 bg-muted hover:bg-muted-foreground/40"
+                  i === index ? "w-5 bg-primary" : "w-1.5 bg-muted hover:bg-muted-foreground/40"
                 }`}
               />
             ))}
           </div>
 
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-2">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setIndex((i) => Math.max(0, i - 1))}
-              disabled={index === 0}
-              className="gap-1"
+              disabled={isFirst}
+              className="gap-1 h-8"
             >
               <ChevronLeft className="w-4 h-4" /> Back
             </Button>
@@ -152,19 +294,19 @@ const OrientationTutorial = ({ open, onOpenChange }: Props) => {
                 <button onClick={close} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
                   Skip tour
                 </button>
-                <Button size="sm" onClick={() => setIndex((i) => Math.min(steps.length - 1, i + 1))} className="gap-1">
+                <Button size="sm" onClick={() => setIndex((i) => Math.min(steps.length - 1, i + 1))} className="gap-1 h-8">
                   Next <ChevronRight className="w-4 h-4" />
                 </Button>
               </>
             ) : (
-              <Button size="sm" onClick={close} className="gap-1">
+              <Button size="sm" onClick={close} className="gap-1 h-8">
                 <Check className="w-4 h-4" /> Get started
               </Button>
             )}
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 };
 
