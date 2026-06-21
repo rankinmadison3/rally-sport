@@ -168,29 +168,88 @@ const Tasks = () => {
       return;
     }
     if (!formAssignee) {
-      toast.error("Please choose a player to assign this task to");
+      toast.error("Please choose who this task is for");
       return;
     }
     setSubmitting(true);
-    const { error } = await supabase.from("action_steps").insert({
-      team_id: teamId,
-      user_id: formAssignee,
-      assigned_by: user.id,
-      text: trimmed,
-      notes: formNotes.trim() || null,
-      category: formCategory,
-      due_date: formDueDate ? format(formDueDate, "yyyy-MM-dd") : null,
-      done: false,
-    });
-    setSubmitting(false);
-    if (error) {
-      toast.error("Failed to create task");
-      return;
+
+    if (formAssignee === TEMPLATE_SENTINEL) {
+      const { error } = await supabase.from("action_step_templates").insert({
+        team_id: teamId,
+        created_by: user.id,
+        text: trimmed,
+        notes: formNotes.trim() || null,
+        category: formCategory,
+        due_date: formDueDate ? format(formDueDate, "yyyy-MM-dd") : null,
+        active: true,
+      });
+      setSubmitting(false);
+      if (error) {
+        toast.error("Failed to save template");
+        return;
+      }
+      toast.success("Template saved · will auto-assign to new players");
+    } else {
+      const { error } = await supabase.from("action_steps").insert({
+        team_id: teamId,
+        user_id: formAssignee,
+        assigned_by: user.id,
+        text: trimmed,
+        notes: formNotes.trim() || null,
+        category: formCategory,
+        due_date: formDueDate ? format(formDueDate, "yyyy-MM-dd") : null,
+        done: false,
+      });
+      setSubmitting(false);
+      if (error) {
+        toast.error("Failed to create task");
+        return;
+      }
+      toast.success("Task assigned");
     }
-    toast.success("Task assigned");
+
     resetForm();
     setDialogOpen(false);
     fetchAll();
+  };
+
+  const handleDeleteTemplate = async (id: string) => {
+    if (!confirm("Delete this template? Tasks already assigned to players will remain.")) return;
+    const prev = templates;
+    setTemplates((p) => p.filter((t) => t.id !== id));
+    const { error } = await supabase.from("action_step_templates").delete().eq("id", id);
+    if (error) {
+      toast.error("Failed to delete template");
+      setTemplates(prev);
+    } else {
+      toast.success("Template deleted");
+    }
+  };
+
+  const handleApplyTemplateToRoster = async (tpl: TemplateRow) => {
+    if (!user || !teamId) return;
+    if (players.length === 0) {
+      toast.error("No players on the roster yet");
+      return;
+    }
+    if (!confirm(`Assign this task to all ${players.length} current player${players.length === 1 ? "" : "s"}?`)) return;
+    const rows = players.map((p) => ({
+      team_id: teamId,
+      user_id: p.user_id,
+      assigned_by: user.id,
+      text: tpl.text,
+      notes: tpl.notes,
+      category: tpl.category,
+      due_date: tpl.due_date,
+      done: false,
+    }));
+    const { error } = await supabase.from("action_steps").insert(rows);
+    if (error) {
+      toast.error("Failed to assign to roster");
+    } else {
+      toast.success(`Assigned to ${players.length} player${players.length === 1 ? "" : "s"}`);
+      fetchAll();
+    }
   };
 
   const toggleDone = async (task: TaskRow) => {
