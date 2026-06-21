@@ -15,6 +15,7 @@ import FeedbackForm from "@/pages/FeedbackForm";
 import Profile from "@/pages/Profile";
 import SeasonRecord from "@/pages/SeasonRecord";
 import Reflections from "@/pages/Reflections";
+import FeedbackInbox from "@/pages/FeedbackInbox";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/NotFound";
 
@@ -49,6 +50,7 @@ const App = () => (
               <Route path="/reflections" element={<ProtectedRoute><Reflections /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/season" element={<ProtectedRoute><SeasonRecord /></ProtectedRoute>} />
+              <Route path="/inbox" element={<ProtectedRoute><FeedbackInbox /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AppLayout>

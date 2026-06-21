@@ -550,6 +550,7 @@ export type Database = {
           created_at: string
           id: string
           is_anonymous: boolean
+          status: Database["public"]["Enums"]["suggestion_status"]
           team_id: string
           user_id: string | null
         }
@@ -558,6 +559,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_anonymous?: boolean
+          status?: Database["public"]["Enums"]["suggestion_status"]
           team_id: string
           user_id?: string | null
         }
@@ -566,6 +568,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_anonymous?: boolean
+          status?: Database["public"]["Enums"]["suggestion_status"]
           team_id?: string
           user_id?: string | null
         }
@@ -675,6 +678,7 @@ export type Database = {
     }
     Enums: {
       app_role: "coach" | "player" | "manager"
+      suggestion_status: "new" | "reviewed" | "resolved"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -803,6 +807,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["coach", "player", "manager"],
+      suggestion_status: ["new", "reviewed", "resolved"],
     },
   },
 } as const

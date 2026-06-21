@@ -7,9 +7,11 @@ import { toast } from "sonner";
 import logo from "@/assets/rally-sport-logo.png";
 
 const DesktopSidebar = () => {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const navigate = useNavigate();
   const initial = user?.email?.charAt(0).toUpperCase() ?? "?";
+  const isStaff = role === "coach" || role === "manager";
+  const navItems = desktopNavItems.filter((item) => !item.staffOnly || isStaff);
 
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();
@@ -26,7 +28,7 @@ const DesktopSidebar = () => {
         <img src={logo} alt="Rally Sport" className="h-10 w-auto object-contain" />
       </div>
       <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-        {desktopNavItems.map((item) => (
+        {navItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
