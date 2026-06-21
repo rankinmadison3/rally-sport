@@ -14,6 +14,7 @@ const MobileBottomNav = () => {
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
+              data-tour={item.path}
               className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg transition-colors ${
                 isActive
                   ? "text-primary"
