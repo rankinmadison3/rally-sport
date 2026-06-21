@@ -48,6 +48,7 @@ const App = () => (
               <Route path="/feedback/form/:formId" element={<ProtectedRoute><FeedbackForm /></ProtectedRoute>} />
               <Route path="/reflections" element={<ProtectedRoute><Reflections /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/season" element={<ProtectedRoute><SeasonRecord /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AppLayout>
