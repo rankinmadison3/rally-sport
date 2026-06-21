@@ -1,4 +1,5 @@
 import { AbsoluteFill, Sequence } from "remotion";
+import "./fonts";
 import { ColdOpen } from "./scenes/ColdOpen";
 import { HeroDashboard } from "./scenes/HeroDashboard";
 import { HeroCalendar } from "./scenes/HeroCalendar";
