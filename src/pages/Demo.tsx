@@ -112,7 +112,8 @@ const Demo = () => {
         created_at: daysAgo(i).toISOString(),
       }));
 
-      const [t1, t2, t3, t4, t5] = await Promise.all([
+      const labels = ["Tasks", "Calendar", "Suggestions", "Ratings", "Moods"];
+      const results = await Promise.all([
         supabase.from("action_steps").insert(taskRows),
         supabase.from("calendar_events").insert(eventRows),
         supabase.from("suggestions").insert(suggestionRows),
@@ -120,9 +121,13 @@ const Demo = () => {
         supabase.from("morale_checkins").insert(moodRows),
       ]);
 
-      const errs = [t1, t2, t3, t4, t5].map((r) => r.error?.message).filter(Boolean);
-      if (errs.length) {
-        toast.error(`Some inserts failed: ${errs[0]}`);
+      const failed = results
+        .map((r, i) => (r.error ? `${labels[i]}: ${r.error.message}` : null))
+        .filter(Boolean) as string[];
+      const okCount = results.length - failed.length;
+
+      if (failed.length) {
+        toast.error(`${okCount}/${results.length} sections seeded. Failed — ${failed.join(" | ")}`);
       } else {
         toast.success("Demo data loaded across the app.");
       }
@@ -190,16 +195,23 @@ const Demo = () => {
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={seed} disabled={busy !== null || !teamId}>
-            {busy === "seed" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            Load demo data
-          </Button>
-          <Button onClick={clear} disabled={busy !== null || !teamId} variant="outline">
-            {busy === "clear" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-            Clear demo data
-          </Button>
-        </div>
+        {role !== "coach" && role !== "manager" ? (
+          <div className="rounded-lg bg-muted text-muted-foreground p-3 text-xs">
+            Demo seeding requires a coach or manager account — task creation is restricted to staff
+            by row-level security. Sign in as your demo coach or manager to use this page.
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={seed} disabled={busy !== null || !teamId}>
+              {busy === "seed" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              Load demo data
+            </Button>
+            <Button onClick={clear} disabled={busy !== null || !teamId} variant="outline">
+              {busy === "clear" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+              Clear demo data
+            </Button>
+          </div>
+        )}
 
         <div className="text-xs text-muted-foreground space-y-1 border-t border-border pt-3">
           <p className="font-semibold text-foreground">Will insert:</p>
