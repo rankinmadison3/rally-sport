@@ -60,6 +60,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (!teamId) return;
+    fetchUnloggedGames();
 
     const fetchData = async () => {
       // Fetch team record
