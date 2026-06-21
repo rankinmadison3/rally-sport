@@ -1,0 +1,1 @@
+CREATE POLICY "Managers can view ratings" ON public.feedback_ratings FOR SELECT USING (has_role(auth.uid(), 'manager'::app_role));
