@@ -151,7 +151,13 @@ const Tasks = () => {
     setFormNotes("");
     setFormCategory("Technical");
     setFormDueDate(undefined);
-    setFormAssignee("");
+    setFormAssignee(players.length === 0 ? TEMPLATE_SENTINEL : "");
+  };
+
+  // When opening the dialog, default to template mode if there's no roster yet
+  const openCreateDialog = () => {
+    setFormAssignee(players.length === 0 ? TEMPLATE_SENTINEL : "");
+    setDialogOpen(true);
   };
 
   const handleCreate = async () => {
