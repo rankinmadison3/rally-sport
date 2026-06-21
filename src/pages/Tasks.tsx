@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Trash2, Calendar as CalendarIcon, CheckCircle2, Circle, ClipboardCheck } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Calendar as CalendarIcon, CheckCircle2, Circle, ClipboardCheck, Sparkles, Send } from "lucide-react";
 import { format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
