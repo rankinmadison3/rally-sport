@@ -554,9 +554,12 @@ const Tasks = () => {
               <Label htmlFor="task-assignee">Assign to</Label>
               <Select value={formAssignee} onValueChange={setFormAssignee}>
                 <SelectTrigger id="task-assignee">
-                  <SelectValue placeholder={players.length ? "Select a player" : "No players on team yet"} />
+                  <SelectValue placeholder="Select an assignee" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value={TEMPLATE_SENTINEL}>
+                    ✨ All future players (template)
+                  </SelectItem>
                   {players.map((p) => (
                     <SelectItem key={p.user_id} value={p.user_id}>
                       {p.display_name}
@@ -564,6 +567,11 @@ const Tasks = () => {
                   ))}
                 </SelectContent>
               </Select>
+              {formAssignee === TEMPLATE_SENTINEL && (
+                <p className="text-[11px] text-muted-foreground">
+                  Saved as a preseason template. Auto-assigns to every player who joins your team.
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-3">
