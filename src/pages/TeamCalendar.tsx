@@ -246,7 +246,8 @@ const TeamCalendar = () => {
                   <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center shrink-0">
                     {evt.event_type === "game" ? <Trophy className="w-4 h-4 text-primary" /> :
                      evt.event_type === "absence" ? <XCircle className="w-4 h-4 text-destructive" /> :
-                     <CalendarIcon className="w-4 h-4 text-success" />}
+                     evt.event_type === "practice" ? <Dumbbell className="w-4 h-4 text-success" /> :
+                     <CalendarIcon className="w-4 h-4 text-muted-foreground" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
