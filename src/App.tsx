@@ -16,6 +16,7 @@ import Profile from "@/pages/Profile";
 import SeasonRecord from "@/pages/SeasonRecord";
 import Reflections from "@/pages/Reflections";
 import FeedbackInbox from "@/pages/FeedbackInbox";
+import Demo from "@/pages/Demo";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/NotFound";
 
@@ -51,6 +52,7 @@ const App = () => (
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/season" element={<ProtectedRoute><SeasonRecord /></ProtectedRoute>} />
               <Route path="/inbox" element={<ProtectedRoute><FeedbackInbox /></ProtectedRoute>} />
+              <Route path="/__demo-seed" element={<ProtectedRoute><Demo /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AppLayout>
