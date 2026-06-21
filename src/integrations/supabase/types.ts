@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      action_step_templates: {
+        Row: {
+          active: boolean
+          category: string
+          created_at: string
+          created_by: string
+          due_date: string | null
+          id: string
+          notes: string | null
+          team_id: string
+          text: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          category: string
+          created_at?: string
+          created_by: string
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          team_id: string
+          text: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          created_by?: string
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          team_id?: string
+          text?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_step_templates_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       action_steps: {
         Row: {
           assigned_by: string | null

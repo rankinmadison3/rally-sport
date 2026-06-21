@@ -1,33 +1,67 @@
-## Goal
-Refresh `src/pages/Login.tsx` to the selected "High-performance minimal" direction. Visual-only refactor; all auth behavior, signup fields (name, role pills, team code), forgot-password link, and mode switcher stay intact.
+# Preseason Task Templates
 
-## Changes (src/pages/Login.tsx)
+Let coaches prebuild a task list before the roster exists. New templates are stored separately from real assignments, then auto-cloned into each player's task list the moment they join the team.
 
-**Layout**
-- Replace the current split-screen with a `flex` 2-column shell: left brand panel (`hidden lg:flex w-1/2`, crimson bg), right form panel (`w-full lg:w-1/2`, white bg, centered).
-- Mobile: hide left panel entirely. Show a compact crimson header bar at the top with logo + "Sports Team Management" tagline, then the form on white background.
+## How it works (user-facing)
 
-**Left brand panel (desktop)**
-- Crimson background with subtle radial-dot texture overlay (8% opacity, 24px grid).
-- Top: Rally Sport logo + uppercase wordmark + small tagline.
-- Middle: uppercase Space Grotesk H1 — "One platform for every team, every role, every game." (tracking-tighter, max-w).
-- Three feature cards (Users/Trophy/Activity) in vertical stack — translucent `bg-white/10 border-white/10 backdrop-blur-md rounded-xl`, icon square + title + sub-label.
-- Bottom: small uppercase tracking-widest copyright "© Rally Sport Systems".
+- A new **"Preseason Templates"** section appears on the Tasks page for coaches and managers.
+- In the **New Task** dialog, the "Assign to" dropdown gains a top option: **"All future players (template)"**. Picking it saves the task as a template instead of an assignment.
+- Templates show in their own collapsible list with category, due date, and notes — same card style as real tasks but visually muted with a "Template" badge.
+- Each template row gets two actions: **Delete** and **Apply to current roster** (clones the template to every player currently on the team, in case the coach wants to retroactively push it).
+- When a new player joins via team code, every active template is automatically inserted into their `action_steps` as a fresh open task.
+- Players never see the templates table — only the real tasks generated from it.
 
-**Right form panel**
-- Max-width 440px, left-aligned on desktop, centered on mobile.
-- Heading: Space Grotesk bold "Welcome back" / "Create account" + muted subhead.
-- Inputs: `bg-slate-50` style mapped to design tokens (`bg-muted`), border, rounded-lg, `focus:ring-2 focus:ring-primary` — keep current inputClass but switch to ring-primary and add taller py-3.5.
-- Labels: uppercase, bold, tracking-widest, muted (matches current `labelClass`).
-- Keep signup-only fields: Full Name, Role pills, Team Code.
-- Sign-in: keep Forgot password? link, right-aligned, primary-colored.
-- Submit button: crimson, full width, py-4, bold, with arrow icon that translates on hover; loading spinner preserved.
-- Bottom: "Don't have an account? Sign up" / vice versa, separated by top border with `mt-10 pt-8`.
+## Data model
 
-**Tokens & memory**
-- Use semantic tokens (`hsl(var(--primary))`, `bg-card`, `text-muted-foreground`, etc.) — no hardcoded `#D1113E`.
-- Keep Space Grotesk + Inter (matches project Visual Identity memory). Remove the unused Barlow Condensed / DM Sans `<style>` import.
+New table `public.action_step_templates`:
 
-**Out of scope**
-- No changes to AuthContext, signUp/signIn logic, routes, or DB.
-- No new functionality (forgot-password modal, OAuth buttons, etc.).
+- `team_id` (FK teams)
+- `created_by` (FK auth.users)
+- `text`, `notes`, `category`, `due_date` (same shape as `action_steps` minus `user_id` and `done`)
+- `active` boolean default true (so a coach can pause a template without deleting it)
+- standard `id`, `created_at`, `updated_at`
+
+RLS:
+- Coach (team owner) and managers (team members with manager role) can select/insert/update/delete templates for their team.
+- Players have **no** access to this table.
+
+GRANTs to `authenticated` and `service_role` (no `anon`).
+
+## Auto-assignment on join
+
+Postgres trigger `on_team_member_added` on `public.team_members AFTER INSERT`:
+
+- Looks up the new member's role from `user_roles`.
+- If role is `player`, inserts a row into `action_steps` for each active template on that team, copying `text`, `notes`, `category`, `due_date`, with `user_id = NEW.user_id`, `assigned_by = template.created_by`, `done = false`.
+- Manager joins do not get auto-assigned (managers don't receive tasks today).
+
+Function is `SECURITY DEFINER` with `search_path = public` so it can write `action_steps` regardless of the joining user's RLS context.
+
+## Manual "Apply to roster" action
+
+Client-side: for each current `team_members` row where the user has role `player`, insert a copy of the template into `action_steps`. This is a one-shot button — no dedup, so re-clicking creates duplicates (we'll show a confirm dialog: "This will add this task to all N current players. Continue?").
+
+## Frontend changes
+
+`src/pages/Tasks.tsx`:
+
+- Fetch templates alongside tasks when `isCoachOrManager`.
+- Add `"__template__"` sentinel as first item in the assignee `Select`, labeled **"All future players (template)"**. Auto-select it when `players.length === 0`.
+- Branch `handleCreate`: if assignee is the sentinel, insert into `action_step_templates`; else current behavior.
+- New `<TemplatesSection>` above the Open tasks list (coach/manager only), with delete + "Apply to roster" buttons.
+- Update empty state copy: when no players and no templates, suggest "Start by prebuilding your season plan as templates."
+
+No changes to player view.
+
+## Out of scope
+
+- Scheduling templates to auto-create on a specific date (templates apply only at player-join time).
+- Editing a template after creation (delete + recreate for v1).
+- Bulk-import or duplicate-template detection.
+- Notifying players when auto-assigned tasks land (they'll just appear in their Tasks list).
+
+## Files touched
+
+- New migration: `action_step_templates` table + RLS + GRANTs + trigger function + trigger on `team_members`.
+- `src/pages/Tasks.tsx`: template fetching, UI section, create-as-template branch, apply-to-roster action.
+- `src/integrations/supabase/types.ts`: regenerated by the migration.
