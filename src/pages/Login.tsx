@@ -155,7 +155,7 @@ const Login = () => {
                 {isSignUp ? "Create account" : "Welcome back"}
               </h2>
               <p className="text-muted-foreground font-medium text-sm">
-                {isSignUp ? "Join your team on TeamPulse" : "Sign in to your TeamPulse account"}
+                {isSignUp ? "Join your team on Rally Sport" : "Sign in to your Rally Sport account"}
               </p>
             </div>
 
