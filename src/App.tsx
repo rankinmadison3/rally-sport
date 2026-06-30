@@ -16,7 +16,7 @@ import Profile from "@/pages/Profile";
 import SeasonRecord from "@/pages/SeasonRecord";
 import Reflections from "@/pages/Reflections";
 import FeedbackInbox from "@/pages/FeedbackInbox";
-import Demo from "@/pages/Demo";
+
 import Login from "@/pages/Login";
 import NotFound from "@/pages/NotFound";
 
