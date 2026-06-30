@@ -113,27 +113,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (error) throw error;
 
     if (data.user) {
-      await supabase.from("user_roles").insert({ user_id: data.user.id, role: selectedRole });
+      const { data: newTeamId, error: rpcError } = await supabase.rpc("signup_with_role", {
+        p_role: selectedRole,
+        p_display_name: displayName,
+        p_team_code: teamCode ?? null,
+      });
+      if (rpcError) throw rpcError;
+      if (newTeamId) setTeamId(newTeamId as string);
 
-      if (selectedRole === "coach") {
-        const { data: team } = await supabase
-          .from("teams")
-          .insert({ name: `${displayName}'s Team`, coach_id: data.user.id })
-          .select("id")
-          .single();
-        if (team) setTeamId(team.id);
-      } else if ((selectedRole === "player" || selectedRole === "manager") && teamCode) {
-        const { data: team, error: teamError } = await supabase
-          .from("teams")
-          .select("id")
-          .eq("code", teamCode)
-          .single();
-        if (teamError || !team) {
-          throw new Error("Invalid team code. Please check with your coach.");
-        }
-        await supabase.from("team_members").insert({ team_id: team.id, user_id: data.user.id });
-        setTeamId(team.id);
-      }
 
       setRole(selectedRole);
 
