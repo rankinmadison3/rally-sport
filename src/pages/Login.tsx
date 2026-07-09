@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { ArrowRight, Loader2, Users, Trophy, Activity } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import logo from "@/assets/rally-sport-logo.png";
@@ -14,7 +14,18 @@ const Login = () => {
   const [displayName, setDisplayName] = useState("");
   const [role, setRole] = useState<"coach" | "player" | "manager">("player");
   const [teamCode, setTeamCode] = useState("");
+  const [dob, setDob] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const ageFrom = (iso: string) => {
+    const b = new Date(iso);
+    if (isNaN(b.getTime())) return NaN;
+    const now = new Date();
+    let age = now.getFullYear() - b.getFullYear();
+    const m = now.getMonth() - b.getMonth();
+    if (m < 0 || (m === 0 && now.getDate() < b.getDate())) age--;
+    return age;
+  };
 
   const handleSubmit = async () => {
     if (!email || !password) {
@@ -34,12 +45,24 @@ const Login = () => {
           setLoading(false);
           return;
         }
+        const age = ageFrom(dob);
+        if (!dob || isNaN(age)) {
+          toast.error("Please enter your date of birth");
+          setLoading(false);
+          return;
+        }
+        if (age < 13) {
+          toast.error("You must be at least 13 years old to use Rally Sport.");
+          setLoading(false);
+          return;
+        }
         await signUp(
           email,
           password,
           displayName,
           role,
           role === "player" || role === "manager" ? teamCode.trim().toUpperCase() : undefined,
+          dob,
         );
         toast.success("Account created! You can sign in now.");
         setIsSignUp(false);
@@ -210,6 +233,18 @@ const Login = () => {
                       />
                     </div>
                   )}
+
+                  <div className="space-y-2">
+                    <label className={labelClass}>Date of Birth</label>
+                    <input
+                      type="date"
+                      value={dob}
+                      onChange={(e) => setDob(e.target.value)}
+                      max={new Date().toISOString().split("T")[0]}
+                      className={inputClass}
+                    />
+                    <p className="text-[11px] text-muted-foreground">You must be at least 13 to use Rally Sport.</p>
+                  </div>
                 </>
               )}
 
@@ -228,13 +263,13 @@ const Login = () => {
                 <div className="flex justify-between items-center">
                   <label className={labelClass + " mb-0"}>Password</label>
                   {!isSignUp && (
-                    <button
-                      type="button"
+                    <Link
+                      to="/reset-password"
                       className="text-xs font-semibold hover:underline"
                       style={{ color: "hsl(var(--primary))" }}
                     >
                       Forgot password?
-                    </button>
+                    </Link>
                   )}
                 </div>
                 <input

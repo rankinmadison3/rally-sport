@@ -1,99 +1,45 @@
-## Concept
+# App Store Prep — Final In-App Work
 
-A 15-second kinetic sports sizzle — crimson, white, and ink black, with bold kinetic typography over real screenshots of the seeded demo app. Hero beats on **Dashboard** and **Season Calendar**, then a rapid montage of **Action Steps**, **Feedback**, and **Chat** with a final logo lock-up.
+I'll do everything I can from inside Lovable. A few items (Xcode signing, App Store Connect submission, buying a support domain) can only be done on your Mac after export — I'll leave you a short checklist for those.
 
-Vibe: Nike training-app energy — quick cuts, hard-edged type slamming in on the beat, screenshots framed inside angled device mocks, crimson accent strokes wiping between scenes.
+## What I'll build
 
-## Direction
+### 1. Forgot password flow
+- New `/reset-password` page (enters email → `supabase.auth.resetPasswordForEmail`).
+- New `/update-password` page (handles the recovery link → `supabase.auth.updateUser({ password })`).
+- Wire the "Forgot password?" button on Login to `/reset-password`.
 
-- **Palette**: `#B3122C` crimson (primary accent), `#0B0B0F` ink, `#F5F2EC` off-white, `#1A1A22` panel.
-- **Type**: Space Grotesk 700 for hero/kinetic titles, Inter 500 for kickers/labels. (Matches Rally Sport identity in memory.)
-- **Motion system**:
-  - Default in: 12-frame `spring({ damping: 22, stiffness: 220 })` + 6-frame blur-to-sharp.
-  - Accent in (hero titles): bigger spring overshoot + per-letter stagger of 2 frames.
-  - Scene cuts: crimson `wipe({ direction: 'from-left' })` over 6 frames — feels like a stat overlay swipe.
-- **Motifs**: diagonal crimson stroke wipes, tall stat counters (W-L record counts up), thin "REC •" timestamp tag in the corner, broadcast-style lower-third chips.
+### 2. Age gate at signup (13+)
+- Add a required "Date of birth" field on the signup form.
+- Block signup client-side if age < 13, with a clear error message.
+- Also enforce in the `signup_with_role` RPC (reject if DOB missing / under 13) as a server-side backstop.
 
-## Storyboard (15s @ 30fps = 450 frames)
+### 3. Capacitor iOS setup (files only — you'll run `npx cap add ios` after export)
+- Add `@capacitor/core`, `@capacitor/cli`, `@capacitor/ios`, `@capacitor/assets` to `package.json`.
+- Create `capacitor.config.ts` with:
+  - `appId: app.lovable.f2523576796643c0853666f9d43d3d2a`
+  - `appName: Rally Sport`
+  - Dev-only hot-reload `server.url` block, commented with instructions to remove for App Store builds.
+- Add `resources/icon.png` (1024×1024) and `resources/splash.png` (2732×2732) generated with the image tool (crimson Rally Sport mark), ready for `npx capacitor-assets generate`.
 
-```text
-0:00 -> 0:02  [60f]  COLD OPEN — black, "RALLY SPORT" kinetic title slams in,
-                     crimson stroke wipes through it. Tagline: "Run your team."
-0:02 -> 0:05  [90f]  HERO 1 — Dashboard screenshot in tilted phone frame, slides
-                     up from bottom; kinetic chips fly in: "TEAM PULSE", "9-3
-                     SEASON", "MORALE 4.3". Parallax shift on the phone.
-0:05 -> 0:08  [90f]  HERO 2 — Calendar screenshot full-bleed inside laptop
-                     frame; W/L dots pop in stagger; lower-third reads
-                     "SEASON CALENDAR — WINS, PRACTICES, EVENTS".
-0:08 -> 0:13 [150f]  MONTAGE — three 50-frame beats with crimson wipes:
-                       a) Action Steps list (chips: TECHNICAL/MENTAL/PHYSICAL/TEAMWORK)
-                       b) Feedback (mood faces + rating bars animate up)
-                       c) Chat (messages cascade in, pinned announcement glows)
-0:13 -> 0:15  [60f]  END CARD — Rally Sport logo lock-up, "ONE APP. ONE TEAM."
-                     Crimson underline draws across.
-```
+### 4. iOS polish
+- Add `NSPhotoLibraryUsageDescription` and `NSCameraUsageDescription` guidance to the post-export checklist (Info.plist lives in the iOS project, which doesn't exist until you run `npx cap add ios`).
+- Add safe-area top inset to `DesktopHeader`/`MobileLayout` where a fixed top bar exists.
 
-Total: 450 frames. Each transition overlaps ~6 frames, accounted for in `<TransitionSeries>`.
+### 5. Support email
+- Ask you for the real support email address (see question below) and drop it into `src/pages/Support.tsx` + Privacy policy contact line.
 
-## Technical
+### 6. Metadata + favicon
+- Generate a Rally Sport favicon from the existing logo, drop into `public/favicon.png`, remove `public/favicon.ico`, and update `index.html`.
+- Add `apple-touch-icon` link.
 
-### 1. Capture real screenshots from the seeded preview
+### 7. Post-export checklist file
+- Write `IOS_RELEASE.md` at project root with the exact commands and App Store Connect steps (Capacitor add/sync, icon generation, Xcode signing, TestFlight, privacy questionnaire answers matching what we collect).
 
-Use `browser--view_preview` against the running preview (seeded demo data is already in place). Capture at the viewport that matches the device frame each shot uses:
+## Out of scope (can only be done outside Lovable)
+- Running `npx cap add ios`, `npx cap sync`, opening Xcode, signing, uploading to TestFlight.
+- Apple Developer account, App Store Connect listing, screenshots.
+- Configuring a real sender email domain to re-enable email verification (separate task if you want it).
 
-| Shot | Route | Viewport | Saved to |
-|---|---|---|---|
-| Dashboard | `/dashboard` (or `/`) | 390×844 (phone) | `remotion/public/shots/dashboard.png` |
-| Calendar | `/calendar` | 1440×900 (laptop) | `remotion/public/shots/calendar.png` |
-| Action Steps | `/tasks` (action steps page) | 390×844 | `remotion/public/shots/tasks.png` |
-| Feedback | `/feedback` | 390×844 | `remotion/public/shots/feedback.png` |
-| Chat | `/chat` | 390×844 | `remotion/public/shots/chat.png` |
-
-I'll first probe the actual route names from `src/App.tsx` before capturing, and re-seed via `/__demo-seed` if any screen is empty.
-
-### 2. Scaffold Remotion project
-
-- `mkdir -p remotion && cd remotion && bun init -y`
-- Install: `remotion @remotion/cli @remotion/renderer @remotion/bundler @remotion/transitions @remotion/google-fonts @remotion/compositor-linux-x64-musl react react-dom typescript @types/react`
-- Patch the gnu compositor binary with the musl one and symlink system `ffmpeg`/`ffprobe` (per video-creator skill — required on NixOS).
-- `tsconfig.json` with `jsx: "react-jsx"`, `module: "Preserve"`.
-
-### 3. File structure
-
-```text
-remotion/
-  src/
-    index.ts                     # registerRoot
-    Root.tsx                     # <Composition id="main" 1920x1080 30fps 450f>
-    MainVideo.tsx                # TransitionSeries + persistent grain/scanline layer
-    components/
-      PhoneFrame.tsx             # tilted iPhone mock
-      LaptopFrame.tsx            # 16:10 laptop mock
-      KineticTitle.tsx           # per-letter spring-in
-      StatChip.tsx               # broadcast lower-third chip
-      CrimsonWipe.tsx            # diagonal stroke wipe used between scenes
-      GrainOverlay.tsx           # 4% opacity noise, persistent
-    scenes/
-      ColdOpen.tsx
-      HeroDashboard.tsx
-      HeroCalendar.tsx
-      MontageTasks.tsx
-      MontageFeedback.tsx
-      MontageChat.tsx
-      EndCard.tsx
-  public/
-    shots/                       # screenshots captured above
-    logo.png                     # copied from src/assets/rally-sport-logo.png
-  scripts/
-    render-remotion.mjs          # programmatic render (chromeMode: chrome-for-testing, muted: true)
-```
-
-### 4. Render
-
-`code--exec cd remotion && node scripts/render-remotion.mjs` → outputs `/mnt/documents/rally-sport-walkthrough.mp4` (1920×1080, H.264, muted, ~15s). Spot-check frames 30/120/240/360/440 with `bunx remotion still` before the full render.
-
-## Out of scope
-
-- No voiceover or music (video is muted; sandbox ffmpeg lacks AAC encoder).
-- No app code changes — only the new `remotion/` directory is added.
-- No animated UI re-creations — montage uses the captured screenshots, with kinetic type and frames as the motion layer on top.
+## Question before I start
+- **Support email address**: what real inbox should I put on the Support page and in the Privacy policy? (If you don't have one yet, I'll use `support@rallysport.app` as a clearly-labeled placeholder and flag it in `IOS_RELEASE.md` to change before submitting.)

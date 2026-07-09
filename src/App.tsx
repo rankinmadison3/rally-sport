@@ -23,6 +23,8 @@ import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
 import Support from "@/pages/Support";
 import DeleteAccount from "@/pages/DeleteAccount";
+import ResetPassword from "@/pages/ResetPassword";
+import UpdatePassword from "@/pages/UpdatePassword";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +46,8 @@ const App = () => (
           <AppLayout>
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/update-password" element={<UpdatePassword />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/support" element={<Support />} />
