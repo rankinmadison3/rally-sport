@@ -592,6 +592,12 @@ const Profile = () => {
           <Button onClick={handleSignOut} variant="destructive" className="w-full gap-2">
             <LogOut className="w-4 h-4" /> Log out
           </Button>
+          <div className="flex flex-wrap gap-3 justify-center pt-2 text-xs text-muted-foreground">
+            <a href="/privacy" className="hover:text-foreground underline">Privacy</a>
+            <a href="/terms" className="hover:text-foreground underline">Terms</a>
+            <a href="/support" className="hover:text-foreground underline">Support</a>
+            <a href="/delete-account" className="hover:text-destructive underline">Delete account</a>
+          </div>
         </div>
       )}
 
