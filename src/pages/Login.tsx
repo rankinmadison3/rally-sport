@@ -233,6 +233,18 @@ const Login = () => {
                       />
                     </div>
                   )}
+
+                  <div className="space-y-2">
+                    <label className={labelClass}>Date of Birth</label>
+                    <input
+                      type="date"
+                      value={dob}
+                      onChange={(e) => setDob(e.target.value)}
+                      max={new Date().toISOString().split("T")[0]}
+                      className={inputClass}
+                    />
+                    <p className="text-[11px] text-muted-foreground">You must be at least 13 to use Rally Sport.</p>
+                  </div>
                 </>
               )}
 
@@ -251,13 +263,13 @@ const Login = () => {
                 <div className="flex justify-between items-center">
                   <label className={labelClass + " mb-0"}>Password</label>
                   {!isSignUp && (
-                    <button
-                      type="button"
+                    <Link
+                      to="/reset-password"
                       className="text-xs font-semibold hover:underline"
                       style={{ color: "hsl(var(--primary))" }}
                     >
                       Forgot password?
-                    </button>
+                    </Link>
                   )}
                 </div>
                 <input
