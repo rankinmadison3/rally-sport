@@ -41,7 +41,8 @@ const Login = () => {
           role,
           role === "player" || role === "manager" ? teamCode.trim().toUpperCase() : undefined,
         );
-        toast.success("Account created! Check your email to verify.");
+        toast.success("Account created! You can sign in now.");
+        setIsSignUp(false);
       } else {
         await signIn(email, password);
         toast.success("Welcome back!");
