@@ -265,7 +265,7 @@ const Login = () => {
               </button>
             </div>
 
-            <div className="mt-10 pt-8 border-t border-border text-center">
+            <div className="mt-10 pt-8 border-t border-border text-center space-y-3">
               <p className="text-muted-foreground font-medium text-sm">
                 {isSignUp ? "Already have an account? " : "Don't have an account? "}
                 <button
@@ -275,6 +275,11 @@ const Login = () => {
                 >
                   {isSignUp ? "Sign in" : "Sign up"}
                 </button>
+              </p>
+              <p className="text-xs text-muted-foreground">
+                By continuing you agree to our{" "}
+                <a href="/terms" className="underline hover:text-foreground">Terms</a> and{" "}
+                <a href="/privacy" className="underline hover:text-foreground">Privacy Policy</a>.
               </p>
             </div>
           </div>
