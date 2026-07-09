@@ -10,7 +10,7 @@ interface AuthContextType {
   role: AppRole | null;
   teamId: string | null;
   loading: boolean;
-  signUp: (email: string, password: string, displayName: string, role: AppRole, teamCode?: string) => Promise<void>;
+  signUp: (email: string, password: string, displayName: string, role: AppRole, teamCode?: string, dob?: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -100,13 +100,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, displayName: string, selectedRole: AppRole, teamCode?: string) => {
+  const signUp = async (email: string, password: string, displayName: string, selectedRole: AppRole, teamCode?: string, dob?: string) => {
 
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { display_name: displayName },
+        data: { display_name: displayName, date_of_birth: dob ?? null },
         emailRedirectTo: window.location.origin,
       },
     });
