@@ -6,7 +6,10 @@ const MobileBottomNav = () => {
   const navigate = useNavigate();
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-card border-t border-border z-50">
+    <nav
+      className="md:hidden fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-card border-t border-border z-50"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+    >
       <div className="flex justify-around items-center py-2 px-1">
         {mobileNavItems.map((item) => {
           const isActive = location.pathname === item.path;
