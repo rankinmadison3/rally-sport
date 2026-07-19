@@ -46,9 +46,16 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
       <DesktopSidebar />
 
       {/* Mobile shell */}
-      <div className="md:hidden flex flex-col min-h-screen max-w-md mx-auto bg-background relative">
-        <div id="app-main-content" className="flex-1 overflow-y-auto pb-20">
-          <header className="sticky top-0 z-40 bg-card border-b border-border">
+      <div className="md:hidden flex flex-col min-h-[100dvh] max-w-md mx-auto bg-background relative">
+        <div
+          id="app-main-content"
+          className="flex-1 overflow-y-auto"
+          style={{ paddingBottom: "calc(5rem + env(safe-area-inset-bottom))" }}
+        >
+          <header
+            className="sticky top-0 z-40 bg-card border-b border-border"
+            style={{ paddingTop: "env(safe-area-inset-top)" }}
+          >
             <div className="flex items-center justify-center py-2">
               <img
                 src={logo}
