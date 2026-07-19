@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { Send, Loader2, Sparkles, Users, TrendingUp, CheckCircle2 } from "lucide-react";
+import { Send, Loader2, Sparkles, Users, TrendingUp, CheckCircle2, Heart } from "lucide-react";
+import { HeroCard } from "@/components/ui/hero-card";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -305,16 +306,25 @@ const Reflections = () => {
       yourMood.avg != null && teamMood.avg != null ? yourMood.avg - teamMood.avg : null;
 
     return (
-      <div className="p-4 space-y-6 max-w-3xl mx-auto">
-        <div>
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-            <Sparkles className="w-3 h-3" /> {role === "coach" ? "Coach's View" : "Manager's View"}
-          </p>
-          <h1 className="text-2xl font-bold font-display text-foreground">Reflections</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Your read on the team — and how it compares to what players report.
-          </p>
-        </div>
+      <div className="p-4 space-y-6">
+        <HeroCard
+          eyebrow={`${role === "coach" ? "Coach's" : "Manager's"} View`}
+          title="Reflections"
+          subtitle="Your read on the team — and how it compares to what players report."
+          icon={<Sparkles className="w-5 h-5" />}
+          right={
+            <div className="text-right">
+              <p className="text-[10px] uppercase tracking-wider text-primary-foreground/70">Team mood</p>
+              <p className="text-3xl font-bold font-display leading-none mt-1">
+                {teamMood.avg != null ? teamMood.avg.toFixed(1) : "–"}
+                <span className="text-sm text-primary-foreground/70">/5</span>
+              </p>
+              <p className="text-[10px] text-primary-foreground/70 mt-1">
+                {teamMood.n} check-in{teamMood.n === 1 ? "" : "s"}
+              </p>
+            </div>
+          }
+        />
 
         {/* Trends */}
         <div className="bg-card rounded-xl p-5 shadow-[var(--card-shadow)] space-y-4">
@@ -598,16 +608,20 @@ const Reflections = () => {
 
   // ---------- PLAYER VIEW (unchanged) ----------
   return (
-    <div className="p-4 space-y-6 max-w-3xl mx-auto">
-      <div>
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-          <Sparkles className="w-3 h-3" /> Personal
-        </p>
-        <h1 className="text-2xl font-bold font-display text-foreground">Reflections</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Quick personal check-ins, anonymous notes to your coach, and quick category ratings.
-        </p>
-      </div>
+    <div className="p-4 space-y-6">
+      <HeroCard
+        eyebrow="Personal"
+        title="Reflections"
+        subtitle="Quick check-ins, anonymous notes, and category ratings."
+        icon={<Heart className="w-5 h-5" />}
+        right={
+          loggedToday ? (
+            <div className="w-14 h-14 rounded-2xl bg-primary-foreground/15 backdrop-blur-sm flex items-center justify-center">
+              <CheckCircle2 className="w-7 h-7" />
+            </div>
+          ) : null
+        }
+      />
 
       {/* Mood */}
       <div className="bg-card rounded-xl p-5 shadow-[var(--card-shadow)] space-y-4">

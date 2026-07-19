@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { HeroCard, StatTile } from "@/components/ui/hero-card";
 
 type Category = "Technical" | "Mental" | "Physical" | "Teamwork";
 const CATEGORIES: Category[] = ["Technical", "Mental", "Physical", "Teamwork"];
@@ -354,6 +355,41 @@ const Tasks = () => {
     return { open, done };
   }, [tasks]);
 
+  // Category breakdown for stat tiles
+  const categoryStats = useMemo(() => {
+    const stats: Record<Category, { open: number; done: number }> = {
+      Technical: { open: 0, done: 0 },
+      Mental: { open: 0, done: 0 },
+      Physical: { open: 0, done: 0 },
+      Teamwork: { open: 0, done: 0 },
+    };
+    tasks.forEach((t) => {
+      if (t.done) stats[t.category].done++;
+      else stats[t.category].open++;
+    });
+    return stats;
+  }, [tasks]);
+
+  // Overdue count
+  const overdueCount = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return tasks.filter((t) => {
+      if (t.done || !t.due_date) return false;
+      const d = new Date(t.due_date + "T00:00:00");
+      return d.getTime() < today.getTime();
+    }).length;
+  }, [tasks]);
+
+  // Completion ring
+  const total = tasks.length;
+  const doneCount = grouped.done.length;
+  const pct = total === 0 ? 0 : Math.round((doneCount / total) * 100);
+  const ringSize = 88;
+  const ringStroke = 9;
+  const ringR = (ringSize - ringStroke) / 2;
+  const ringC = 2 * Math.PI * ringR;
+
   const formatDue = (dateStr: string | null) => {
     if (!dateStr) return null;
     const d = new Date(dateStr + "T00:00:00");
@@ -366,25 +402,24 @@ const Tasks = () => {
     return { label: `Due ${format(d, "MMM d")}`, overdue: false };
   };
 
+  const CAT_ACCENT: Record<Category, string> = {
+    Technical: "bg-blue-100 text-blue-700",
+    Mental: "bg-purple-100 text-purple-700",
+    Physical: "bg-green-100 text-green-700",
+    Teamwork: "bg-amber-100 text-amber-700",
+  };
+
   return (
     <div className="p-4 space-y-5 pb-8">
-      {/* Header */}
+      {/* Header — back button */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate("/")}
-            className="w-9 h-9 rounded-full bg-muted flex items-center justify-center"
-            aria-label="Back to dashboard"
-          >
-            <ArrowLeft className="w-4 h-4 text-muted-foreground" />
-          </button>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              {isCoachOrManager ? "Assign & Track" : "Your Assignments"}
-            </p>
-            <h1 className="text-2xl font-bold font-display text-foreground">Tasks</h1>
-          </div>
-        </div>
+        <button
+          onClick={() => navigate("/")}
+          className="w-9 h-9 rounded-full bg-muted flex items-center justify-center"
+          aria-label="Back to dashboard"
+        >
+          <ArrowLeft className="w-4 h-4 text-muted-foreground" />
+        </button>
         {isCoachOrManager && (
           <Button onClick={openCreateDialog} size="sm" className="gap-1.5">
             <Plus className="w-4 h-4" /> New
@@ -392,9 +427,91 @@ const Tasks = () => {
         )}
       </div>
 
+      {/* Hero — Progress board */}
+      <HeroCard
+        eyebrow={isCoachOrManager ? "Assign & Track" : "Your Assignments"}
+        title="Tasks"
+        subtitle={
+          total === 0
+            ? "No tasks yet — get started below."
+            : `${doneCount} of ${total} complete${overdueCount ? ` · ${overdueCount} overdue` : ""}`
+        }
+        icon={<ClipboardCheck className="w-5 h-5" />}
+        right={
+          <div className="relative" style={{ width: ringSize, height: ringSize }}>
+            <svg width={ringSize} height={ringSize} className="-rotate-90">
+              <circle
+                cx={ringSize / 2}
+                cy={ringSize / 2}
+                r={ringR}
+                fill="none"
+                stroke="hsl(var(--primary-foreground) / 0.25)"
+                strokeWidth={ringStroke}
+              />
+              <circle
+                cx={ringSize / 2}
+                cy={ringSize / 2}
+                r={ringR}
+                fill="none"
+                stroke="hsl(var(--primary-foreground))"
+                strokeWidth={ringStroke}
+                strokeLinecap="round"
+                strokeDasharray={ringC}
+                strokeDashoffset={ringC - (pct / 100) * ringC}
+                style={{ transition: "stroke-dashoffset 700ms ease-out" }}
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-xl font-bold font-display leading-none">{pct}%</span>
+              <span className="text-[9px] uppercase tracking-wider text-primary-foreground/70 mt-0.5">
+                Done
+              </span>
+            </div>
+          </div>
+        }
+      />
+
+      {/* Category breakdown tiles */}
+      {total > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          {(Object.keys(categoryStats) as Category[]).map((cat) => {
+            const s = categoryStats[cat];
+            const catTotal = s.open + s.done;
+            const catPct = catTotal === 0 ? 0 : Math.round((s.done / catTotal) * 100);
+            return (
+              <div key={cat} className="bg-card rounded-2xl p-3.5 shadow-[var(--card-shadow)]">
+                <div className="flex items-center justify-between mb-2">
+                  <span
+                    className={cn(
+                      "text-[10px] font-semibold px-2 py-0.5 rounded-full",
+                      CAT_ACCENT[cat]
+                    )}
+                  >
+                    {cat}
+                  </span>
+                </div>
+                <p className="text-xl font-bold font-display text-card-foreground leading-none">
+                  {s.open}
+                  <span className="text-xs font-medium text-muted-foreground ml-1">open</span>
+                </p>
+                <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full bg-primary rounded-full transition-all"
+                    style={{ width: `${catPct}%` }}
+                  />
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1.5">
+                  {s.done}/{catTotal} done
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Empty state */}
       {!loading && tasks.length === 0 && templates.length === 0 && (
-        <div className="bg-card rounded-xl p-8 shadow-[var(--card-shadow)] text-center space-y-2">
+        <div className="bg-card rounded-2xl p-8 shadow-[var(--card-shadow)] text-center space-y-2">
           <div className="w-12 h-12 rounded-full bg-muted mx-auto flex items-center justify-center">
             <ClipboardCheck className="w-6 h-6 text-muted-foreground" />
           </div>

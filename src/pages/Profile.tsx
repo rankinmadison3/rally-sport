@@ -306,95 +306,142 @@ const Profile = () => {
   const roleLabel = role ? role.charAt(0).toUpperCase() + role.slice(1) : "Member";
 
   return (
-    <div className="p-4 max-w-3xl mx-auto space-y-5">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Account</p>
-          <h1 className="text-2xl font-bold font-display text-foreground">Profile</h1>
-        </div>
-        {!editing ? (
-          <Button size="sm" variant="outline" onClick={() => setEditing(true)} className="gap-1.5">
-            <Pencil className="w-4 h-4" /> Edit
-          </Button>
-        ) : (
-          <div className="flex gap-2">
-            <Button size="sm" variant="ghost" onClick={cancelEdit} disabled={saving}>
-              <X className="w-4 h-4" />
-            </Button>
-            <Button size="sm" onClick={handleSave} disabled={saving}>
-              {saving && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
-              Save
-            </Button>
-          </div>
-        )}
-      </div>
-
-      {/* Avatar + identity card */}
-      <div className="bg-card rounded-2xl p-6 shadow-[var(--card-shadow)] flex flex-col sm:flex-row items-center sm:items-start gap-5">
-        <div className="relative">
-          <div className="w-28 h-28 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-4xl font-bold font-display shadow-md overflow-hidden">
-            {profile?.avatar_url ? (
-              <img
-                src={profile.avatar_url}
-                alt={displayName}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span>{initial}</span>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={handleAvatarPick}
-            disabled={uploading}
-            className="absolute bottom-0 right-0 w-9 h-9 rounded-full bg-card border border-border shadow-md flex items-center justify-center hover:bg-muted disabled:opacity-50 transition-colors"
-            aria-label="Change profile picture"
-          >
-            {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleAvatarFile}
+    <div className="p-4 space-y-5 pb-8">
+      {/* Identity banner — crimson gradient with overlapping avatar */}
+      <div className="relative">
+        <div
+          className="relative overflow-hidden rounded-3xl h-36 sm:h-40 shadow-[0_10px_40px_-15px_hsl(var(--primary)/0.45)]"
+          style={{
+            background:
+              "linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.82) 100%)",
+          }}
+        >
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -top-16 -right-16 w-56 h-56 rounded-full opacity-40 blur-3xl"
+            style={{ background: "hsl(var(--primary-foreground) / 0.35)" }}
           />
-        </div>
-
-        <div className="flex-1 text-center sm:text-left space-y-2 min-w-0">
-          {editing ? (
-            <div className="space-y-1.5">
-              <Label htmlFor="display_name">Name</Label>
-              <Input
-                id="display_name"
-                value={form.display_name}
-                onChange={(e) => setForm((f) => ({ ...f, display_name: e.target.value }))}
-                maxLength={60}
-              />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 opacity-[0.07]"
+            style={{
+              backgroundImage:
+                "linear-gradient(hsl(var(--primary-foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--primary-foreground)) 1px, transparent 1px)",
+              backgroundSize: "28px 28px",
+            }}
+          />
+          <div className="relative p-5 flex items-start justify-between text-primary-foreground">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary-foreground/70">
+                Account
+              </p>
+              <h1 className="text-2xl sm:text-3xl font-bold font-display leading-tight mt-1">
+                Profile
+              </h1>
             </div>
-          ) : (
-            <p className="text-2xl font-bold font-display text-card-foreground truncate">{displayName}</p>
-          )}
-          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
-              <Shield className="w-3 h-3" /> {roleLabel}
-            </span>
-            {team && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-xs font-medium">
-                <UsersIcon className="w-3 h-3" /> {team.name}
-              </span>
+            {!editing ? (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setEditing(true)}
+                className="gap-1.5 bg-primary-foreground/10 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/20 hover:text-primary-foreground"
+              >
+                <Pencil className="w-4 h-4" /> Edit
+              </Button>
+            ) : (
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={cancelEdit}
+                  disabled={saving}
+                  className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="bg-primary-foreground text-primary hover:bg-primary-foreground/90"
+                >
+                  {saving && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
+                  Save
+                </Button>
+              </div>
             )}
           </div>
-          {profile?.avatar_url && !editing && (
+        </div>
+
+        {/* Overlapping avatar + identity block */}
+        <div className="-mt-14 sm:-mt-16 px-5 flex flex-col sm:flex-row items-center sm:items-end gap-4">
+          <div className="relative shrink-0">
+            <div className="w-28 h-28 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-4xl font-bold font-display shadow-lg overflow-hidden ring-4 ring-background">
+              {profile?.avatar_url ? (
+                <img
+                  src={profile.avatar_url}
+                  alt={displayName}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span>{initial}</span>
+              )}
+            </div>
             <button
               type="button"
-              onClick={handleAvatarRemove}
+              onClick={handleAvatarPick}
               disabled={uploading}
-              className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+              className="absolute bottom-0 right-0 w-9 h-9 rounded-full bg-card border border-border shadow-md flex items-center justify-center hover:bg-muted disabled:opacity-50 transition-colors"
+              aria-label="Change profile picture"
             >
-              Remove picture
+              {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
             </button>
-          )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarFile}
+            />
+          </div>
+
+          <div className="flex-1 min-w-0 text-center sm:text-left sm:pb-2 space-y-2">
+            {editing ? (
+              <div className="space-y-1.5">
+                <Label htmlFor="display_name">Name</Label>
+                <Input
+                  id="display_name"
+                  value={form.display_name}
+                  onChange={(e) => setForm((f) => ({ ...f, display_name: e.target.value }))}
+                  maxLength={60}
+                />
+              </div>
+            ) : (
+              <p className="text-2xl font-bold font-display text-foreground truncate">
+                {displayName}
+              </p>
+            )}
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                <Shield className="w-3 h-3" /> {roleLabel}
+              </span>
+              {team && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-xs font-medium">
+                  <UsersIcon className="w-3 h-3" /> {team.name}
+                </span>
+              )}
+            </div>
+            {profile?.avatar_url && !editing && (
+              <button
+                type="button"
+                onClick={handleAvatarRemove}
+                disabled={uploading}
+                className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+              >
+                Remove picture
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
