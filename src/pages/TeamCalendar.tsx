@@ -7,6 +7,7 @@ import { format, startOfMonth, endOfMonth, getDay, getDaysInMonth, addMonths, su
 import { Button } from "@/components/ui/button";
 import EventDialog, { EventFormValue } from "@/components/calendar/EventDialog";
 import { downloadIcs } from "@/lib/icsExport";
+import { HeroCard } from "@/components/ui/hero-card";
 
 interface MyTask {
   id: string;
