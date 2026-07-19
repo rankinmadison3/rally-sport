@@ -29,9 +29,10 @@ interface CalendarEvent {
 }
 
 const TeamCalendar = () => {
-  const { role, teamId } = useAuth();
+  const { user, role, teamId } = useAuth();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [myTasks, setMyTasks] = useState<MyTask[]>([]);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
