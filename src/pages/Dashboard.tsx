@@ -442,7 +442,7 @@ const Dashboard = () => {
 
       {/* Your Team - Coach/Manager Only, moved to bottom */}
       {(role === "coach" || role === "manager") && teamCode && (
-        <div data-tour="profile-team-code" className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] space-y-3">
+        <div className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="font-display font-semibold text-card-foreground">Your Team</h2>
             <div className="flex items-center gap-2">
