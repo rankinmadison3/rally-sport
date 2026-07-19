@@ -583,7 +583,9 @@ const Profile = () => {
       {!editing && (
         <div className="space-y-2">
           <Button
-            onClick={() => setTutorialOpen(true)}
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent("rally:replay-orientation", { bubbles: true }));
+            }}
             variant="outline"
             className="w-full gap-2"
           >
@@ -600,8 +602,6 @@ const Profile = () => {
           </div>
         </div>
       )}
-
-      <OrientationTutorial open={tutorialOpen} onOpenChange={setTutorialOpen} />
     </div>
   );
 };
