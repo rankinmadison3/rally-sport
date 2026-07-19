@@ -85,6 +85,8 @@ const Tasks = () => {
   const [formDueDate, setFormDueDate] = useState<Date | undefined>();
   const [formAssignee, setFormAssignee] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
+  const [editingTask, setEditingTask] = useState<TaskRow | null>(null);
+  const [editingTemplate, setEditingTemplate] = useState<TemplateRow | null>(null);
 
   const fetchAll = async () => {
     if (!teamId || !user) return;
