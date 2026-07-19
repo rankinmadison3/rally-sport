@@ -338,22 +338,45 @@ const Dashboard = () => {
         </button>
       )}
 
-      {/* Tasks shortcut */}
+      {/* Tasks shortcut - premium tile */}
       <button
         onClick={() => navigate("/tasks")}
-        className="w-full bg-card rounded-xl p-4 shadow-[var(--card-shadow)] flex items-center gap-3 hover:bg-accent/50 transition-colors text-left"
+        className="relative overflow-hidden w-full rounded-2xl p-5 shadow-[var(--card-shadow)] text-left transition-transform hover:scale-[1.01] bg-card border border-border"
       >
-        <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center shrink-0">
-          <ClipboardCheck className="w-5 h-5 text-accent-foreground" />
+        {/* decorative diagonal accent */}
+        <div
+          className="pointer-events-none absolute -right-16 -top-16 w-40 h-40 rounded-full opacity-[0.08]"
+          style={{ background: "hsl(var(--primary))" }}
+        />
+        <div
+          className="pointer-events-none absolute -right-6 bottom-[-3rem] w-32 h-32 rounded-full opacity-[0.05]"
+          style={{ background: "hsl(var(--primary))" }}
+        />
+        <div className="relative flex items-center gap-4">
+          <div
+            className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-md"
+            style={{
+              background:
+                "linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.75) 100%)",
+            }}
+          >
+            <ClipboardCheck className="w-6 h-6 text-primary-foreground" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary/80">
+              Action steps
+            </p>
+            <p className="font-display font-bold text-lg text-card-foreground leading-tight mt-0.5">
+              Tasks
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {role === "player" ? "View your assignments" : "Assign and track team tasks"}
+            </p>
+          </div>
+          <ChevronRight className="w-5 h-5 text-primary shrink-0" />
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-display font-semibold text-card-foreground">Tasks</p>
-          <p className="text-xs text-muted-foreground">
-            {role === "player" ? "View your assignments" : "Assign and track team tasks"}
-          </p>
-        </div>
-        <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
       </button>
+
 
       {/* Unlogged games (coach/manager) */}
       {(role === "coach" || role === "manager") && unloggedGames.length > 0 && (
