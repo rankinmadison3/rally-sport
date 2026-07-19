@@ -154,11 +154,36 @@ const Tasks = () => {
     setFormCategory("Technical");
     setFormDueDate(undefined);
     setFormAssignee(players.length === 0 ? TEMPLATE_SENTINEL : "");
+    setEditingTask(null);
+    setEditingTemplate(null);
   };
 
   // When opening the dialog, default to template mode if there's no roster yet
   const openCreateDialog = () => {
+    resetForm();
     setFormAssignee(players.length === 0 ? TEMPLATE_SENTINEL : "");
+    setDialogOpen(true);
+  };
+
+  const openEditTask = (t: TaskRow) => {
+    setEditingTask(t);
+    setEditingTemplate(null);
+    setFormText(t.text);
+    setFormNotes(t.notes ?? "");
+    setFormCategory(t.category);
+    setFormDueDate(t.due_date ? new Date(t.due_date + "T00:00:00") : undefined);
+    setFormAssignee(t.user_id);
+    setDialogOpen(true);
+  };
+
+  const openEditTemplate = (tpl: TemplateRow) => {
+    setEditingTemplate(tpl);
+    setEditingTask(null);
+    setFormText(tpl.text);
+    setFormNotes(tpl.notes ?? "");
+    setFormCategory(tpl.category);
+    setFormDueDate(tpl.due_date ? new Date(tpl.due_date + "T00:00:00") : undefined);
+    setFormAssignee(TEMPLATE_SENTINEL);
     setDialogOpen(true);
   };
 
@@ -175,14 +200,53 @@ const Tasks = () => {
     }
     setSubmitting(true);
 
-    if (formAssignee === TEMPLATE_SENTINEL) {
+    const dueStr = formDueDate ? format(formDueDate, "yyyy-MM-dd") : null;
+    const notesStr = formNotes.trim() || null;
+
+    // EDIT existing task
+    if (editingTask) {
+      const { error } = await supabase
+        .from("action_steps")
+        .update({
+          text: trimmed,
+          notes: notesStr,
+          category: formCategory,
+          due_date: dueStr,
+          ...(formAssignee !== TEMPLATE_SENTINEL && formAssignee !== editingTask.user_id
+            ? { user_id: formAssignee }
+            : {}),
+        })
+        .eq("id", editingTask.id);
+      setSubmitting(false);
+      if (error) {
+        toast.error("Failed to update task");
+        return;
+      }
+      toast.success("Task updated");
+    } else if (editingTemplate) {
+      const { error } = await supabase
+        .from("action_step_templates")
+        .update({
+          text: trimmed,
+          notes: notesStr,
+          category: formCategory,
+          due_date: dueStr,
+        })
+        .eq("id", editingTemplate.id);
+      setSubmitting(false);
+      if (error) {
+        toast.error("Failed to update template");
+        return;
+      }
+      toast.success("Template updated");
+    } else if (formAssignee === TEMPLATE_SENTINEL) {
       const { error } = await supabase.from("action_step_templates").insert({
         team_id: teamId,
         created_by: user.id,
         text: trimmed,
-        notes: formNotes.trim() || null,
+        notes: notesStr,
         category: formCategory,
-        due_date: formDueDate ? format(formDueDate, "yyyy-MM-dd") : null,
+        due_date: dueStr,
         active: true,
       });
       setSubmitting(false);
@@ -197,9 +261,9 @@ const Tasks = () => {
         user_id: formAssignee,
         assigned_by: user.id,
         text: trimmed,
-        notes: formNotes.trim() || null,
+        notes: notesStr,
         category: formCategory,
-        due_date: formDueDate ? format(formDueDate, "yyyy-MM-dd") : null,
+        due_date: dueStr,
         done: false,
       });
       setSubmitting(false);
