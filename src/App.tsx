@@ -25,6 +25,7 @@ import Support from "@/pages/Support";
 import DeleteAccount from "@/pages/DeleteAccount";
 import ResetPassword from "@/pages/ResetPassword";
 import UpdatePassword from "@/pages/UpdatePassword";
+import FontPreview from "@/pages/FontPreview";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +65,7 @@ const App = () => (
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/season" element={<ProtectedRoute><SeasonRecord /></ProtectedRoute>} />
               <Route path="/inbox" element={<ProtectedRoute><FeedbackInbox /></ProtectedRoute>} />
+              <Route path="/__font-preview" element={<FontPreview />} />
               
               <Route path="*" element={<NotFound />} />
             </Routes>
