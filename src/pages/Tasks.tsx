@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Trash2, Calendar as CalendarIcon, CheckCircle2, Circle, ClipboardCheck, Sparkles, Send } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Calendar as CalendarIcon, CheckCircle2, Circle, ClipboardCheck, Sparkles, Send, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -85,6 +85,8 @@ const Tasks = () => {
   const [formDueDate, setFormDueDate] = useState<Date | undefined>();
   const [formAssignee, setFormAssignee] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
+  const [editingTask, setEditingTask] = useState<TaskRow | null>(null);
+  const [editingTemplate, setEditingTemplate] = useState<TemplateRow | null>(null);
 
   const fetchAll = async () => {
     if (!teamId || !user) return;
@@ -152,11 +154,36 @@ const Tasks = () => {
     setFormCategory("Technical");
     setFormDueDate(undefined);
     setFormAssignee(players.length === 0 ? TEMPLATE_SENTINEL : "");
+    setEditingTask(null);
+    setEditingTemplate(null);
   };
 
   // When opening the dialog, default to template mode if there's no roster yet
   const openCreateDialog = () => {
+    resetForm();
     setFormAssignee(players.length === 0 ? TEMPLATE_SENTINEL : "");
+    setDialogOpen(true);
+  };
+
+  const openEditTask = (t: TaskRow) => {
+    setEditingTask(t);
+    setEditingTemplate(null);
+    setFormText(t.text);
+    setFormNotes(t.notes ?? "");
+    setFormCategory(t.category);
+    setFormDueDate(t.due_date ? new Date(t.due_date + "T00:00:00") : undefined);
+    setFormAssignee(t.user_id);
+    setDialogOpen(true);
+  };
+
+  const openEditTemplate = (tpl: TemplateRow) => {
+    setEditingTemplate(tpl);
+    setEditingTask(null);
+    setFormText(tpl.text);
+    setFormNotes(tpl.notes ?? "");
+    setFormCategory(tpl.category);
+    setFormDueDate(tpl.due_date ? new Date(tpl.due_date + "T00:00:00") : undefined);
+    setFormAssignee(TEMPLATE_SENTINEL);
     setDialogOpen(true);
   };
 
@@ -173,14 +200,53 @@ const Tasks = () => {
     }
     setSubmitting(true);
 
-    if (formAssignee === TEMPLATE_SENTINEL) {
+    const dueStr = formDueDate ? format(formDueDate, "yyyy-MM-dd") : null;
+    const notesStr = formNotes.trim() || null;
+
+    // EDIT existing task
+    if (editingTask) {
+      const { error } = await supabase
+        .from("action_steps")
+        .update({
+          text: trimmed,
+          notes: notesStr,
+          category: formCategory,
+          due_date: dueStr,
+          ...(formAssignee !== TEMPLATE_SENTINEL && formAssignee !== editingTask.user_id
+            ? { user_id: formAssignee }
+            : {}),
+        })
+        .eq("id", editingTask.id);
+      setSubmitting(false);
+      if (error) {
+        toast.error("Failed to update task");
+        return;
+      }
+      toast.success("Task updated");
+    } else if (editingTemplate) {
+      const { error } = await supabase
+        .from("action_step_templates")
+        .update({
+          text: trimmed,
+          notes: notesStr,
+          category: formCategory,
+          due_date: dueStr,
+        })
+        .eq("id", editingTemplate.id);
+      setSubmitting(false);
+      if (error) {
+        toast.error("Failed to update template");
+        return;
+      }
+      toast.success("Template updated");
+    } else if (formAssignee === TEMPLATE_SENTINEL) {
       const { error } = await supabase.from("action_step_templates").insert({
         team_id: teamId,
         created_by: user.id,
         text: trimmed,
-        notes: formNotes.trim() || null,
+        notes: notesStr,
         category: formCategory,
-        due_date: formDueDate ? format(formDueDate, "yyyy-MM-dd") : null,
+        due_date: dueStr,
         active: true,
       });
       setSubmitting(false);
@@ -195,9 +261,9 @@ const Tasks = () => {
         user_id: formAssignee,
         assigned_by: user.id,
         text: trimmed,
-        notes: formNotes.trim() || null,
+        notes: notesStr,
         category: formCategory,
-        due_date: formDueDate ? format(formDueDate, "yyyy-MM-dd") : null,
+        due_date: dueStr,
         done: false,
       });
       setSubmitting(false);
@@ -364,6 +430,14 @@ const Tasks = () => {
                   <div className="flex items-start justify-between gap-2">
                     <p className="font-medium text-sm text-card-foreground leading-snug">{tpl.text}</p>
                     <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={() => openEditTemplate(tpl)}
+                        className="text-muted-foreground hover:text-primary p-1"
+                        aria-label="Edit template"
+                        title="Edit template"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
                       {players.length > 0 && (
                         <button
                           onClick={() => handleApplyTemplateToRoster(tpl)}
@@ -435,13 +509,22 @@ const Tasks = () => {
                         {t.text}
                       </p>
                       {isCoachOrManager && (
-                        <button
-                          onClick={() => handleDelete(t.id)}
-                          className="text-muted-foreground hover:text-destructive shrink-0"
-                          aria-label="Delete task"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => openEditTask(t)}
+                            className="text-muted-foreground hover:text-primary"
+                            aria-label="Edit task"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(t.id)}
+                            className="text-muted-foreground hover:text-destructive"
+                            aria-label="Delete task"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       )}
                     </div>
                     {t.notes && (
@@ -505,13 +588,22 @@ const Tasks = () => {
                         {t.text}
                       </p>
                       {isCoachOrManager && (
-                        <button
-                          onClick={() => handleDelete(t.id)}
-                          className="text-muted-foreground hover:text-destructive shrink-0"
-                          aria-label="Delete task"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => openEditTask(t)}
+                            className="text-muted-foreground hover:text-primary"
+                            aria-label="Edit task"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(t.id)}
+                            className="text-muted-foreground hover:text-destructive"
+                            aria-label="Delete task"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       )}
                     </div>
                     <div className="flex flex-wrap items-center gap-1.5">
@@ -536,7 +628,7 @@ const Tasks = () => {
       <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) resetForm(); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>New Task</DialogTitle>
+            <DialogTitle>{editingTask ? "Edit Task" : editingTemplate ? "Edit Template" : "New Task"}</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
@@ -552,7 +644,7 @@ const Tasks = () => {
 
             <div className="space-y-2">
               <Label htmlFor="task-assignee">Assign to</Label>
-              <Select value={formAssignee} onValueChange={setFormAssignee}>
+              <Select value={formAssignee} onValueChange={setFormAssignee} disabled={!!editingTemplate}>
                 <SelectTrigger id="task-assignee">
                   <SelectValue placeholder="Select an assignee" />
                 </SelectTrigger>
@@ -636,6 +728,10 @@ const Tasks = () => {
             <Button onClick={handleCreate} disabled={submitting}>
               {submitting
                 ? "Saving..."
+                : editingTask
+                ? "Save Changes"
+                : editingTemplate
+                ? "Save Template"
                 : formAssignee === TEMPLATE_SENTINEL
                 ? "Save Template"
                 : "Assign Task"}
