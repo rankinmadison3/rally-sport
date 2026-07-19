@@ -430,6 +430,14 @@ const Tasks = () => {
                   <div className="flex items-start justify-between gap-2">
                     <p className="font-medium text-sm text-card-foreground leading-snug">{tpl.text}</p>
                     <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={() => openEditTemplate(tpl)}
+                        className="text-muted-foreground hover:text-primary p-1"
+                        aria-label="Edit template"
+                        title="Edit template"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
                       {players.length > 0 && (
                         <button
                           onClick={() => handleApplyTemplateToRoster(tpl)}
