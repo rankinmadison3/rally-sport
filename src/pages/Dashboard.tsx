@@ -377,26 +377,6 @@ const Dashboard = () => {
         </div>
       )}
 
-      <div
-        className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] space-y-3 cursor-pointer hover:bg-accent/30 transition-colors"
-        onClick={() => (role === "coach" || role === "manager") && navigate("/season")}
-        role={(role === "coach" || role === "manager") ? "button" : undefined}
-      >
-        <div className="flex items-center justify-between">
-          <h2 className="font-display font-semibold text-card-foreground">Season Progress</h2>
-          <div className="flex items-center gap-1.5">
-            <Trophy className="w-4 h-4 text-primary" />
-            <span className="text-sm font-bold text-primary">{wins}-{losses}</span>
-          </div>
-        </div>
-        <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
-          <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${winPct}%` }} />
-        </div>
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span>{winPct}% Win Rate</span>
-          <span>{total} Games Played</span>
-        </div>
-      </div>
 
       {/* Team Morale Graph */}
       <div className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] space-y-3">
