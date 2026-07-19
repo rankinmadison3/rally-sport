@@ -355,6 +355,41 @@ const Tasks = () => {
     return { open, done };
   }, [tasks]);
 
+  // Category breakdown for stat tiles
+  const categoryStats = useMemo(() => {
+    const stats: Record<Category, { open: number; done: number }> = {
+      Technical: { open: 0, done: 0 },
+      Mental: { open: 0, done: 0 },
+      Physical: { open: 0, done: 0 },
+      Teamwork: { open: 0, done: 0 },
+    };
+    tasks.forEach((t) => {
+      if (t.done) stats[t.category].done++;
+      else stats[t.category].open++;
+    });
+    return stats;
+  }, [tasks]);
+
+  // Overdue count
+  const overdueCount = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return tasks.filter((t) => {
+      if (t.done || !t.due_date) return false;
+      const d = new Date(t.due_date + "T00:00:00");
+      return d.getTime() < today.getTime();
+    }).length;
+  }, [tasks]);
+
+  // Completion ring
+  const total = tasks.length;
+  const doneCount = grouped.done.length;
+  const pct = total === 0 ? 0 : Math.round((doneCount / total) * 100);
+  const ringSize = 88;
+  const ringStroke = 9;
+  const ringR = (ringSize - ringStroke) / 2;
+  const ringC = 2 * Math.PI * ringR;
+
   const formatDue = (dateStr: string | null) => {
     if (!dateStr) return null;
     const d = new Date(dateStr + "T00:00:00");
