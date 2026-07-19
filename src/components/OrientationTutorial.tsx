@@ -20,6 +20,8 @@ interface Step {
   body: string;
   /** CSS selector for the element to spotlight. Omit for centered intro/outro. */
   target?: string;
+  /** Route to navigate to before spotlighting this element. */
+  route?: string;
 }
 
 const WELCOME: Record<AppRole, { title: string; body: string }> = {
