@@ -612,28 +612,46 @@ const Reflections = () => {
       {/* Mood */}
       <div className="bg-card rounded-xl p-5 shadow-[var(--card-shadow)] space-y-4">
         <h2 className="font-display font-semibold text-card-foreground text-center">How are you feeling today?</h2>
-        <div className="flex justify-between items-center px-2">
-          {moods.map((mood) => (
-            <button
-              key={mood.value}
-              onClick={() => setSelectedMood(mood.value)}
-              className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${
-                selectedMood === mood.value ? "bg-accent scale-110" : "opacity-50 hover:opacity-75"
-              }`}
-            >
-              <span className="text-3xl">{mood.emoji}</span>
-              <span className="text-[10px] font-medium text-muted-foreground">{mood.label}</span>
-            </button>
-          ))}
-        </div>
-        <div className="w-full bg-muted rounded-full h-2">
-          <div className="h-full bg-primary rounded-full transition-all duration-300" style={{ width: `${(selectedMood / 5) * 100}%` }} />
-        </div>
-        <Button onClick={submitMood} disabled={sendingMood} className="w-full">
-          {sendingMood ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-          Log mood
-        </Button>
+        {loggedToday ? (
+          <div className="flex flex-col items-center gap-2 py-4 text-center">
+            <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
+              <CheckCircle2 className="w-6 h-6 text-success" />
+            </div>
+            <p className="text-sm font-medium text-card-foreground">You've checked in today</p>
+            <p className="text-xs text-muted-foreground">
+              One check-in per day keeps the signal clean. See you tomorrow!
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="flex justify-between items-center px-2">
+              {moods.map((mood) => (
+                <button
+                  key={mood.value}
+                  onClick={() => setSelectedMood(mood.value)}
+                  className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${
+                    selectedMood === mood.value ? "bg-accent scale-110" : "opacity-50 hover:opacity-75"
+                  }`}
+                >
+                  <span className="text-3xl">{mood.emoji}</span>
+                  <span className="text-[10px] font-medium text-muted-foreground">{mood.label}</span>
+                </button>
+              ))}
+            </div>
+            <div className="w-full bg-muted rounded-full h-2">
+              <div
+                className="h-full bg-primary rounded-full transition-all duration-300"
+                style={{ width: `${(selectedMood / 5) * 100}%` }}
+              />
+            </div>
+            <Button onClick={submitMood} disabled={sendingMood} className="w-full">
+              {sendingMood ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              Log mood
+            </Button>
+          </>
+        )}
       </div>
+
 
       {/* Anonymous note */}
       <div className="bg-card rounded-xl p-5 shadow-[var(--card-shadow)] space-y-4">
