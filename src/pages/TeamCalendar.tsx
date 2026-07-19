@@ -114,7 +114,13 @@ const TeamCalendar = () => {
     return events.filter((e) => e.event_date === dateStr);
   };
 
+  const getTasksForDay = (day: number) => {
+    const dateStr = format(new Date(year, month, day), "yyyy-MM-dd");
+    return myTasks.filter((t) => t.due_date === dateStr);
+  };
+
   const dayEvents = selectedDay ? getEventsForDay(selectedDay) : [];
+  const dayTasks = selectedDay ? getTasksForDay(selectedDay) : [];
 
   const openCreate = () => {
     const dateStr = selectedDay
