@@ -317,6 +317,27 @@ const Dashboard = () => {
       })()}
 
 
+      {/* Daily reflection reminder (players) */}
+      {role === "player" && needsCheckin && (
+        <button
+          onClick={() => navigate("/reflections")}
+          className="w-full rounded-xl p-4 flex items-center gap-3 text-left transition-transform hover:scale-[1.01] shadow-[var(--card-shadow)] border border-primary/20 bg-primary/5"
+        >
+          <div className="w-10 h-10 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
+            <Sparkles className="w-5 h-5 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-display font-semibold text-card-foreground">
+              Daily reflection
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Log today's mood — takes 5 seconds.
+            </p>
+          </div>
+          <ChevronRight className="w-4 h-4 text-primary shrink-0" />
+        </button>
+      )}
+
       {/* Tasks shortcut */}
       <button
         onClick={() => navigate("/tasks")}
