@@ -135,11 +135,22 @@ const OrientationTutorial = ({ open, onOpenChange }: Props) => {
       const r = el.getBoundingClientRect();
       setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
     };
+    const scrollAndMeasure = () => {
+      const el = document.querySelector(step.target!) as HTMLElement | null;
+      if (el) {
+        try {
+          el.scrollIntoView({ block: "center", inline: "nearest", behavior: "smooth" });
+        } catch {
+          el.scrollIntoView();
+        }
+      }
+      measure();
+    };
     // Wait one frame for render, then retry so navigation/content has time to complete.
     raf = requestAnimationFrame(() => {
-      measure();
-      setTimeout(measure, 120);
-      setTimeout(measure, 350);
+      scrollAndMeasure();
+      setTimeout(scrollAndMeasure, 180);
+      setTimeout(scrollAndMeasure, 450);
       // Keep polling for up to 3s in case data (e.g. team code) is still loading.
       interval = window.setInterval(measure, 150);
       timeout = window.setTimeout(() => window.clearInterval(interval), 3000);
