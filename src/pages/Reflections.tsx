@@ -608,16 +608,20 @@ const Reflections = () => {
 
   // ---------- PLAYER VIEW (unchanged) ----------
   return (
-    <div className="p-4 space-y-6 max-w-3xl mx-auto">
-      <div>
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-          <Sparkles className="w-3 h-3" /> Personal
-        </p>
-        <h1 className="text-2xl font-bold font-display text-foreground">Reflections</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Quick personal check-ins, anonymous notes to your coach, and quick category ratings.
-        </p>
-      </div>
+    <div className="p-4 space-y-6">
+      <HeroCard
+        eyebrow="Personal"
+        title="Reflections"
+        subtitle="Quick check-ins, anonymous notes, and category ratings."
+        icon={<Heart className="w-5 h-5" />}
+        right={
+          loggedToday ? (
+            <div className="w-14 h-14 rounded-2xl bg-primary-foreground/15 backdrop-blur-sm flex items-center justify-center">
+              <CheckCircle2 className="w-7 h-7" />
+            </div>
+          ) : null
+        }
+      />
 
       {/* Mood */}
       <div className="bg-card rounded-xl p-5 shadow-[var(--card-shadow)] space-y-4">
