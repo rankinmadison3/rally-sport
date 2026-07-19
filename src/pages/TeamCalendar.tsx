@@ -61,10 +61,25 @@ const TeamCalendar = () => {
     setLoading(false);
   }, [teamId, currentMonth]);
 
+  const fetchMyTasks = useCallback(async () => {
+    if (!user) return;
+    const start = format(startOfMonth(currentMonth), "yyyy-MM-dd");
+    const end = format(endOfMonth(currentMonth), "yyyy-MM-dd");
+    const { data } = await supabase
+      .from("action_steps")
+      .select("id, text, category, due_date, done")
+      .eq("user_id", user.id)
+      .not("due_date", "is", null)
+      .gte("due_date", start)
+      .lte("due_date", end);
+    setMyTasks((data as MyTask[]) || []);
+  }, [user, currentMonth]);
+
   useEffect(() => {
     setLoading(true);
     fetchEvents();
-  }, [fetchEvents]);
+    fetchMyTasks();
+  }, [fetchEvents, fetchMyTasks]);
 
   // Realtime sync — every team member sees changes immediately
   useEffect(() => {
