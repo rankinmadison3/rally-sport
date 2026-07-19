@@ -728,6 +728,10 @@ const Tasks = () => {
             <Button onClick={handleCreate} disabled={submitting}>
               {submitting
                 ? "Saving..."
+                : editingTask
+                ? "Save Changes"
+                : editingTemplate
+                ? "Save Template"
                 : formAssignee === TEMPLATE_SENTINEL
                 ? "Save Template"
                 : "Assign Task"}
