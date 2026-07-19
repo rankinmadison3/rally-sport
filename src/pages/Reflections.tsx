@@ -316,7 +316,127 @@ const Reflections = () => {
           </p>
         </div>
 
-        {/* Team mood read */}
+        {/* Trends */}
+        <div className="bg-card rounded-xl p-5 shadow-[var(--card-shadow)] space-y-4">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <h2 className="font-display font-semibold text-card-foreground flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-primary" /> Team Trends
+              </h2>
+              <p className="text-xs text-muted-foreground mt-1">
+                Player mood (1–5) and category ratings (1–10) over time.
+              </p>
+            </div>
+            <div className="inline-flex rounded-lg bg-muted p-0.5 text-xs font-medium">
+              {(["daily", "weekly", "monthly"] as TrendRange[]).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setTrendRange(r)}
+                  className={`px-3 py-1.5 rounded-md capitalize transition-colors ${
+                    trendRange === r
+                      ? "bg-card text-card-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {trendLoading ? (
+            <div className="h-64 flex items-center justify-center">
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : trendData.every(
+              (p) =>
+                p.mood == null &&
+                p.communication == null &&
+                p.intensity == null &&
+                p.support == null
+            ) ? (
+            <div className="h-64 flex items-center justify-center text-sm text-muted-foreground">
+              No data yet for this range.
+            </div>
+          ) : (
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={trendData} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                    stroke="hsl(var(--border))"
+                  />
+                  <YAxis
+                    yAxisId="mood"
+                    domain={[1, 5]}
+                    tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                    stroke="hsl(var(--border))"
+                  />
+                  <YAxis
+                    yAxisId="rating"
+                    orientation="right"
+                    domain={[1, 10]}
+                    tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                    stroke="hsl(var(--border))"
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Line
+                    yAxisId="mood"
+                    type="monotone"
+                    dataKey="mood"
+                    name="Mood (1–5)"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2.5}
+                    dot={{ r: 3 }}
+                    connectNulls
+                  />
+                  <Line
+                    yAxisId="rating"
+                    type="monotone"
+                    dataKey="communication"
+                    name="Communication"
+                    stroke="hsl(var(--chart-2, 217 91% 60%))"
+                    strokeWidth={1.75}
+                    dot={false}
+                    connectNulls
+                  />
+                  <Line
+                    yAxisId="rating"
+                    type="monotone"
+                    dataKey="intensity"
+                    name="Intensity"
+                    stroke="hsl(var(--chart-3, 32 95% 55%))"
+                    strokeWidth={1.75}
+                    dot={false}
+                    connectNulls
+                  />
+                  <Line
+                    yAxisId="rating"
+                    type="monotone"
+                    dataKey="support"
+                    name="Coach Support"
+                    stroke="hsl(var(--chart-4, 142 71% 45%))"
+                    strokeWidth={1.75}
+                    dot={false}
+                    connectNulls
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+
+
         <div className="bg-card rounded-xl p-5 shadow-[var(--card-shadow)] space-y-4">
           <h2 className="font-display font-semibold text-card-foreground text-center">
             How do you read the team's mood today?
