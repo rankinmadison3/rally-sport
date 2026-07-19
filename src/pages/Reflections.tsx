@@ -1,9 +1,40 @@
-import { useCallback, useEffect, useState } from "react";
-import { Send, Loader2, Sparkles, Users } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Send, Loader2, Sparkles, Users, TrendingUp, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  Legend,
+} from "recharts";
+import {
+  format,
+  startOfDay,
+  startOfWeek,
+  startOfMonth,
+  subDays,
+  eachDayOfInterval,
+  eachWeekOfInterval,
+  eachMonthOfInterval,
+} from "date-fns";
+
+type TrendRange = "daily" | "weekly" | "monthly";
+
+interface TrendPoint {
+  key: string;
+  label: string;
+  mood: number | null;
+  communication: number | null;
+  intensity: number | null;
+  support: number | null;
+}
 
 const moods = [
   { emoji: "😫", label: "Struggling", value: 1 },
