@@ -10,7 +10,7 @@ const PageContainer = ({ children, className }: PageContainerProps) => {
   return (
     <div
       className={cn(
-        "w-full mx-auto max-w-7xl px-4 py-4 md:px-6 md:py-6 lg:px-8",
+        "w-full mx-auto max-w-7xl px-5 py-6 md:px-10 md:py-10 lg:px-12",
         className
       )}
     >

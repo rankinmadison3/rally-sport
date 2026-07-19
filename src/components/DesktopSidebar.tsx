@@ -23,11 +23,11 @@ const DesktopSidebar = () => {
   };
 
   return (
-    <aside className="hidden md:flex fixed inset-y-0 left-0 w-60 flex-col bg-card border-r border-border z-40">
-      <div className="h-16 flex items-center px-5 border-b border-border">
+    <aside className="hidden md:flex fixed inset-y-0 left-0 w-60 flex-col bg-sidebar border-r border-sidebar-border z-40">
+      <div className="h-20 flex items-center px-6 border-b border-sidebar-border">
         <img src={logo} alt="Rally Sport" className="h-10 w-auto object-contain" />
       </div>
-      <nav className="flex-1 overflow-y-auto p-3 space-y-1">
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
         {navItems.map((item) => (
           <NavLink
             key={item.path}
@@ -35,15 +35,15 @@ const DesktopSidebar = () => {
             end={item.path === "/"}
             data-tour={item.path}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              `relative flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
                 isActive
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-0.5 before:rounded-full before:bg-primary"
+                  : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground"
               }`
             }
           >
             <item.icon className="w-4 h-4" />
-            <span>{item.label}</span>
+            <span className="tracking-tight">{item.label}</span>
           </NavLink>
         ))}
       </nav>
