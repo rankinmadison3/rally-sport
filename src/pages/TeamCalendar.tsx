@@ -198,18 +198,18 @@ const TeamCalendar = () => {
                 key={day}
                 onClick={() => setSelectedDay(day)}
                 className={`relative aspect-square flex flex-col items-center justify-center rounded-lg text-sm transition-all ${
-                  isSelected ? "bg-primary text-primary-foreground font-bold" : "hover:bg-muted text-card-foreground"
+                  isSelected ? "bg-muted text-card-foreground font-bold" : "hover:bg-muted text-card-foreground"
                 }`}
               >
                 {day}
-                {dayEvts.length > 0 && !isSelected && (
-                  <div className="absolute bottom-0.5 flex gap-0.5">
-                    {hasGame && !hasWin && !hasLoss && <Trophy className="w-2.5 h-2.5 text-primary" />}
-                    {hasWin && <div className="w-2 h-2 rounded-full bg-success" />}
-                    {hasLoss && <div className="w-2 h-2 rounded-full bg-destructive" />}
-                    {hasAbsence && <XCircle className="w-2.5 h-2.5 text-destructive" />}
-                    {hasPractice && !hasGame && <Dumbbell className="w-2.5 h-2.5 text-success" />}
-                    {hasOther && !hasGame && !hasPractice && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
+                {dayEvts.length > 0 && (
+                  <div className="absolute bottom-1 flex gap-0.5">
+                    {hasGame && !hasWin && !hasLoss && <Trophy className="w-4 h-4 text-primary" />}
+                    {hasWin && <div className="w-3 h-3 rounded-full bg-success" />}
+                    {hasLoss && <div className="w-3 h-3 rounded-full bg-destructive" />}
+                    {hasAbsence && <XCircle className="w-4 h-4 text-destructive" />}
+                    {hasPractice && !hasGame && <Dumbbell className="w-4 h-4 text-success" />}
+                    {hasOther && !hasGame && !hasPractice && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
                   </div>
                 )}
               </button>
