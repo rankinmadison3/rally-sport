@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { HeroCard, StatTile } from "@/components/ui/hero-card";
 
 type Category = "Technical" | "Mental" | "Physical" | "Teamwork";
 const CATEGORIES: Category[] = ["Technical", "Mental", "Physical", "Teamwork"];
