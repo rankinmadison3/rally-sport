@@ -166,35 +166,112 @@ const TeamCalendar = () => {
     toast.success(`Exported ${data.length} event${data.length === 1 ? "" : "s"}`);
   };
 
+  // Next upcoming event across all months (from current month's fetched events)
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const upcoming = events
+    .filter((e) => e.event_date >= todayStr)
+    .sort((a, b) => a.event_date.localeCompare(b.event_date))[0];
+
+  const daysUntil = (dateStr: string) => {
+    const d = new Date(dateStr + "T00:00:00");
+    const t = new Date();
+    t.setHours(0, 0, 0, 0);
+    return Math.round((d.getTime() - t.getTime()) / 86400000);
+  };
+
+  // 14-day density strip
+  const stripDays = Array.from({ length: 14 }).map((_, i) => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + i);
+    const ds = format(d, "yyyy-MM-dd");
+    const evts = events.filter((e) => e.event_date === ds);
+    const tsks = myTasks.filter((t) => t.due_date === ds);
+    return {
+      date: d,
+      hasGame: evts.some((e) => e.event_type === "game"),
+      hasPractice: evts.some((e) => e.event_type === "practice"),
+      hasOther: evts.some((e) => !["game", "practice"].includes(e.event_type)),
+      hasTask: tsks.length > 0,
+    };
+  });
+
+  const upcomingIcon =
+    upcoming?.event_type === "game" ? <Trophy className="w-5 h-5" /> :
+    upcoming?.event_type === "practice" ? <Dumbbell className="w-5 h-5" /> :
+    upcoming?.event_type === "absence" ? <XCircle className="w-5 h-5" /> :
+    <CalendarIcon className="w-5 h-5" />;
+
   return (
-    <div className="p-4 space-y-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Team</p>
-          <h1 className="text-2xl font-bold font-display text-foreground">Calendar</h1>
-          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-            <Users className="w-3 h-3" /> Synced with all team members
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleExport}
-            disabled={exporting}
-            className="gap-1.5"
-          >
-            <Download className="w-4 h-4" />
-            <span className="hidden sm:inline">Export .ics</span>
+    <div className="p-4 space-y-4 pb-8">
+      <div className="flex items-center justify-end gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleExport}
+          disabled={exporting}
+          className="gap-1.5"
+        >
+          <Download className="w-4 h-4" />
+          <span className="hidden sm:inline">Export .ics</span>
+        </Button>
+        {canEdit && (
+          <Button size="sm" onClick={openCreate} className="gap-1.5">
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">New Event</span>
           </Button>
-          {canEdit && (
-            <Button size="sm" onClick={openCreate} className="gap-1.5">
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">New Event</span>
-            </Button>
-          )}
-        </div>
+        )}
       </div>
+
+      <HeroCard
+        eyebrow="Team"
+        title="Calendar"
+        subtitle={
+          upcoming
+            ? `${upcoming.label} · ${format(new Date(upcoming.event_date + "T00:00:00"), "EEE MMM d")}${
+                daysUntil(upcoming.event_date) === 0
+                  ? " · Today"
+                  : daysUntil(upcoming.event_date) === 1
+                  ? " · Tomorrow"
+                  : ` · in ${daysUntil(upcoming.event_date)} days`
+              }`
+            : "Synced with all team members"
+        }
+        icon={<CalendarIcon className="w-5 h-5" />}
+        right={
+          upcoming && (
+            <div className="w-14 h-14 rounded-2xl bg-primary-foreground/15 backdrop-blur-sm flex flex-col items-center justify-center">
+              {upcomingIcon}
+              <span className="text-[10px] uppercase tracking-wider text-primary-foreground/80 mt-0.5">
+                {format(new Date(upcoming.event_date + "T00:00:00"), "MMM d")}
+              </span>
+            </div>
+          )
+        }
+      >
+        {/* 14-day density strip */}
+        <div className="flex items-end justify-between gap-1">
+          {stripDays.map((s, i) => {
+            const anything = s.hasGame || s.hasPractice || s.hasOther || s.hasTask;
+            return (
+              <div key={i} className="flex flex-col items-center flex-1 min-w-0">
+                <div className="h-6 flex flex-col-reverse items-center gap-0.5 justify-end">
+                  {s.hasGame && <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />}
+                  {s.hasPractice && <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground/70" />}
+                  {s.hasTask && <span className="w-1.5 h-1.5 rounded-full border border-primary-foreground/80" />}
+                  {s.hasOther && !s.hasGame && !s.hasPractice && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground/50" />
+                  )}
+                  {!anything && <span className="w-1 h-1 rounded-full bg-primary-foreground/20" />}
+                </div>
+                <span className="text-[9px] font-medium text-primary-foreground/70 mt-1">
+                  {format(s.date, "d")}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </HeroCard>
 
       <div className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)]">
         <div className="flex items-center justify-between mb-4">
