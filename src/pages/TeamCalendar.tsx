@@ -258,6 +258,7 @@ const TeamCalendar = () => {
           <div className="flex items-center gap-1 text-[10px] text-muted-foreground"><div className="w-2 h-2 rounded-full bg-destructive" /> Loss</div>
           <div className="flex items-center gap-1 text-[10px] text-muted-foreground"><XCircle className="w-3 h-3 text-destructive" /> Absence</div>
           <div className="flex items-center gap-1 text-[10px] text-muted-foreground"><div className="w-2 h-2 rounded-full bg-primary" /> Other</div>
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground"><ClipboardCheck className="w-3 h-3 text-accent-foreground" /> My tasks</div>
         </div>
       </div>
 
