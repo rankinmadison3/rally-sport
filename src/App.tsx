@@ -65,6 +65,7 @@ const App = () => (
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/season" element={<ProtectedRoute><SeasonRecord /></ProtectedRoute>} />
               <Route path="/inbox" element={<ProtectedRoute><FeedbackInbox /></ProtectedRoute>} />
+              <Route path="/__font-preview" element={<FontPreview />} />
               
               <Route path="*" element={<NotFound />} />
             </Routes>
