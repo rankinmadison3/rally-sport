@@ -115,7 +115,15 @@ const OrientationTutorial = ({ open, onOpenChange }: Props) => {
 
   const step = steps[index];
 
-  // Track the target element's rect (and re-measure on resize/scroll)
+  // Navigate to the step's route before spotlighting, if needed.
+  useEffect(() => {
+    if (!open || !step.route) return;
+    if (location.pathname !== step.route) {
+      navigate(step.route, { replace: true });
+    }
+  }, [open, step.route, location.pathname, navigate]);
+
+  // Track the target element's rect (and re-measure on resize/scroll/route change)
   useLayoutEffect(() => {
     if (!open || !step.target) { setRect(null); return; }
     let raf = 0;
@@ -125,10 +133,11 @@ const OrientationTutorial = ({ open, onOpenChange }: Props) => {
       const r = el.getBoundingClientRect();
       setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
     };
-    // Wait one frame for render
+    // Wait one frame for render, then retry so navigation has time to complete.
     raf = requestAnimationFrame(() => {
       measure();
       setTimeout(measure, 120);
+      setTimeout(measure, 350);
     });
     window.addEventListener("resize", measure);
     window.addEventListener("scroll", measure, true);
@@ -137,7 +146,7 @@ const OrientationTutorial = ({ open, onOpenChange }: Props) => {
       window.removeEventListener("resize", measure);
       window.removeEventListener("scroll", measure, true);
     };
-  }, [open, index, step.target]);
+  }, [open, index, step.target, location.pathname]);
 
   if (!open) return null;
 
