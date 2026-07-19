@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Trophy, XCircle, Clock, MapPin, ChevronLeft, ChevronRight, Plus, Download, Pencil, Calendar as CalendarIcon, Users, Dumbbell } from "lucide-react";
+import { Trophy, XCircle, Clock, MapPin, ChevronLeft, ChevronRight, Plus, Download, Pencil, Calendar as CalendarIcon, Users, Dumbbell, ClipboardCheck, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -7,6 +7,15 @@ import { format, startOfMonth, endOfMonth, getDay, getDaysInMonth, addMonths, su
 import { Button } from "@/components/ui/button";
 import EventDialog, { EventFormValue } from "@/components/calendar/EventDialog";
 import { downloadIcs } from "@/lib/icsExport";
+
+interface MyTask {
+  id: string;
+  text: string;
+  category: string | null;
+  due_date: string;
+  done: boolean;
+}
+
 
 interface CalendarEvent {
   id: string;
