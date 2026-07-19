@@ -588,13 +588,22 @@ const Tasks = () => {
                         {t.text}
                       </p>
                       {isCoachOrManager && (
-                        <button
-                          onClick={() => handleDelete(t.id)}
-                          className="text-muted-foreground hover:text-destructive shrink-0"
-                          aria-label="Delete task"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => openEditTask(t)}
+                            className="text-muted-foreground hover:text-primary"
+                            aria-label="Edit task"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(t.id)}
+                            className="text-muted-foreground hover:text-destructive"
+                            aria-label="Delete task"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       )}
                     </div>
                     <div className="flex flex-wrap items-center gap-1.5">
