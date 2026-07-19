@@ -239,6 +239,9 @@ const Reflections = () => {
 
   const submitMood = async () => {
     if (!user || !teamId) return toast.error("No team found");
+    if (!isStaff && loggedToday) {
+      return toast.info("You've already checked in today. Come back tomorrow!");
+    }
     setSendingMood(true);
     const { error } = await supabase.from("morale_checkins").insert({
       user_id: user.id,
@@ -246,9 +249,19 @@ const Reflections = () => {
       mood: selectedMood,
     });
     setSendingMood(false);
-    if (error) return toast.error(error.message);
-    toast.success(isStaff ? "Read logged" : "Mood logged");
-    if (isStaff) loadComparison();
+    if (error) {
+      if ((error as { code?: string }).code === "23505") {
+        setLoggedToday(true);
+        return toast.info("You've already checked in today. Come back tomorrow!");
+      }
+      return toast.error(error.message);
+    }
+    setLoggedToday(true);
+    toast.success(isStaff ? "Read logged" : "Mood logged — see you tomorrow!");
+    if (isStaff) {
+      loadComparison();
+      loadTrends();
+    }
   };
 
   const submitSuggestion = async () => {
