@@ -1,12 +1,14 @@
-import { useEffect, useLayoutEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import {
-  LayoutDashboard, MessageCircle, Calendar, MessageSquare,
-  ClipboardCheck, Sparkles, User as UserIcon, Users, Trophy,
-  ChevronLeft, ChevronRight, X, Check, LucideIcon,
+  Trophy,
+  User as UserIcon,
+  X,
+  Check,
+  LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { desktopNavItems, NavItem } from "@/config/navItems";
 
 type AppRole = "coach" | "player" | "manager";
 
@@ -16,8 +18,6 @@ interface Step {
   body: string;
   /** CSS selector for the element to spotlight. Omit for centered intro/outro. */
   target?: string;
-  /** Optional route to navigate to before showing this step. */
-  route?: string;
 }
 
 const WELCOME: Record<AppRole, { title: string; body: string }> = {
@@ -35,34 +35,16 @@ const WELCOME: Record<AppRole, { title: string; body: string }> = {
   },
 };
 
-const SHARED_STEPS: Step[] = [
-  { icon: LayoutDashboard, title: "Dashboard", body: "Your home base. See today's events, latest team activity, and quick links to everything you use most.", target: '[data-tour="/"]', route: "/" },
-  { icon: Calendar, title: "Team Calendar", body: "Games, practices, and team events in one timeline. Tap any event for details, location, and game results.", target: '[data-tour="/calendar"]', route: "/calendar" },
-  { icon: MessageSquare, title: "Chat", body: "Real-time team messaging. Direct messages with teammates or group channels for the whole team, with pinned announcements at the top.", target: '[data-tour="/chat"]', route: "/chat" },
-  { icon: UserIcon, title: "Profile", body: "Manage your photo, contact info, and personal details. You can replay this tutorial anytime from here.", target: '[data-tour="/profile"]', route: "/profile" },
-];
-
-const ROLE_STEPS: Record<AppRole, Step[]> = {
-  coach: [
-    { icon: ClipboardCheck, title: "Tasks & Action Steps", body: "Assign technical, mental, physical, and teamwork drills to individual players or the whole roster. Track who's done what.", target: '[data-tour="/tasks"]', route: "/tasks" },
-    { icon: MessageCircle, title: "Feedback", body: "Build surveys, mood check-ins, and rating forms. Anonymous suggestions help you hear what players really think.", target: '[data-tour="/feedback"]', route: "/feedback" },
-    { icon: Trophy, title: "Season Record", body: "Log wins and losses here. Your team's progress bar and stats update automatically — the Dashboard also prompts you to log any games that have passed.", target: '[data-tour="/season"]', route: "/season" },
-    { icon: Sparkles, title: "Reflections", body: "Read player reflections after games and practices to spot trends, fatigue, or breakthroughs early.", target: '[data-tour="/reflections"]', route: "/reflections" },
-    { icon: Users, title: "Roster & Team Code", body: "Share your 6-character team code from Profile so players and managers can join your team.", target: '[data-tour="/profile"]', route: "/profile" },
-  ],
-  player: [
-    { icon: ClipboardCheck, title: "Your Tasks", body: "See action steps your coach has assigned across Technical, Mental, Physical, and Teamwork. Mark them done as you go.", target: '[data-tour="/tasks"]', route: "/tasks" },
-    { icon: MessageCircle, title: "Feedback", body: "Fill out quick mood and rating surveys, or send anonymous suggestions to your coach.", target: '[data-tour="/feedback"]', route: "/feedback" },
-    { icon: Sparkles, title: "Reflections", body: "A private space for personal check-ins. Notice patterns in your performance and mindset over time.", target: '[data-tour="/reflections"]', route: "/reflections" },
-    { icon: Trophy, title: "Your Player Profile", body: "Add your jersey number, position, height, weight, and emergency contact so your coach has what they need.", target: '[data-tour="/profile"]', route: "/profile" },
-  ],
-  manager: [
-    { icon: ClipboardCheck, title: "Tasks", body: "Monitor assigned action steps across the roster and help keep players accountable.", target: '[data-tour="/tasks"]', route: "/tasks" },
-    { icon: MessageCircle, title: "Feedback", body: "Review team feedback trends and survey results to help the coach make decisions.", target: '[data-tour="/feedback"]', route: "/feedback" },
-    { icon: Trophy, title: "Season Record", body: "Log wins and losses here. The team progress bar updates automatically — the Dashboard also flags games that need a result.", target: '[data-tour="/season"]', route: "/season" },
-    { icon: Sparkles, title: "Reflections", body: "See aggregate signals from player reflections to support team well-being and morale.", target: '[data-tour="/reflections"]', route: "/reflections" },
-    { icon: Users, title: "Team Coordination", body: "Use chat and calendar to coordinate logistics, share updates, and keep the team aligned.", target: '[data-tour="/chat"]', route: "/chat" },
-  ],
+const DESCRIPTIONS: Record<string, string> = {
+  "/": "Your home base. See today's events, latest team activity, and quick links to everything you use most.",
+  "/feedback": "Create mood check-ins, rating surveys, and anonymous suggestion boxes to hear from your team.",
+  "/inbox": "Coach and manager-only space to read, review, and resolve player feedback and suggestions.",
+  "/tasks": "Assign action steps, track progress, and keep the roster accountable across Technical, Mental, Physical, and Teamwork categories.",
+  "/calendar": "Games, practices, and team events in one timeline. Tap any event for details, location, and results.",
+  "/season": "Log wins and losses here. Your team's progress bar and stats update automatically.",
+  "/chat": "Real-time team messaging. Direct messages with teammates or group channels for the whole team.",
+  "/reflections": "Personal check-ins and notes. Staff can see aggregate trends; players keep a private journal.",
+  "/profile": "Manage your photo, contact info, team code, and replay this tutorial anytime from here.",
 };
 
 const storageKey = (userId: string) => `rally.orientation.completed.${userId}`;
@@ -84,32 +66,45 @@ interface Rect { top: number; left: number; width: number; height: number; }
 
 const PADDING = 8;
 const TOOLTIP_W = 340;
-const TOOLTIP_GAP = 14;
+const TOOLTIP_GAP = 16;
 
 const OrientationTutorial = ({ open, onOpenChange }: Props) => {
   const { user, role } = useAuth();
-  const navigate = useNavigate();
   const [index, setIndex] = useState(0);
   const [rect, setRect] = useState<Rect | null>(null);
 
   const activeRole: AppRole = (role ?? "player") as AppRole;
   const welcome = WELCOME[activeRole];
-  const steps: Step[] = [
-    { icon: Trophy, title: welcome.title, body: welcome.body },
-    ...SHARED_STEPS,
-    ...ROLE_STEPS[activeRole],
-    { icon: Check, title: "You're all set", body: "That's the tour. You can replay it anytime from your Profile page. Now go run your team." },
-  ];
+  const isStaff = role === "coach" || role === "manager";
+
+  const steps: Step[] = useMemo(() => {
+    const navSteps: Step[] = desktopNavItems
+      .filter((item) => !item.staffOnly || isStaff)
+      .map((item: NavItem) => ({
+        icon: item.icon,
+        title: item.label,
+        body: DESCRIPTIONS[item.path] ?? `Navigate to ${item.label}.`,
+        target: `[data-tour="${item.path}"]`,
+      }));
+
+    // Profile lives at the bottom of the sidebar, outside the main nav list.
+    navSteps.push({
+      icon: UserIcon,
+      title: "Profile",
+      body: DESCRIPTIONS["/profile"],
+      target: `[data-tour="/profile"]`,
+    });
+
+    return [
+      { icon: Trophy, title: welcome.title, body: welcome.body },
+      ...navSteps,
+      { icon: Check, title: "You're all set", body: "That's the tour. You can replay it anytime from your Profile page. Now go run your team." },
+    ];
+  }, [activeRole, isStaff, welcome.body, welcome.title]);
 
   useEffect(() => { if (open) setIndex(0); }, [open]);
 
   const step = steps[index];
-
-  // Navigate when step changes
-  useEffect(() => {
-    if (!open) return;
-    if (step.route) navigate(step.route);
-  }, [open, index]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Track the target element's rect (and re-measure on resize/scroll)
   useLayoutEffect(() => {
@@ -121,10 +116,9 @@ const OrientationTutorial = ({ open, onOpenChange }: Props) => {
       const r = el.getBoundingClientRect();
       setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
     };
-    // Wait one frame for navigation/render
+    // Wait one frame for render
     raf = requestAnimationFrame(() => {
       measure();
-      // Re-measure after a brief moment for slow renders
       setTimeout(measure, 120);
     });
     window.addEventListener("resize", measure);
@@ -147,7 +141,6 @@ const OrientationTutorial = ({ open, onOpenChange }: Props) => {
   const isLast = index === steps.length - 1;
   const isFirst = index === 0;
 
-  // Tooltip positioning
   const vw = typeof window !== "undefined" ? window.innerWidth : 1024;
   const vh = typeof window !== "undefined" ? window.innerHeight : 768;
 
@@ -155,9 +148,8 @@ const OrientationTutorial = ({ open, onOpenChange }: Props) => {
   let centered = false;
 
   if (rect) {
-    // Prefer right side of target on wide viewports, otherwise below
     const tooltipW = Math.min(TOOLTIP_W, vw - 32);
-    const tooltipH = 280; // estimate
+    const tooltipH = 260;
     const spaceRight = vw - (rect.left + rect.width);
     const placeRight = spaceRight >= tooltipW + TOOLTIP_GAP + 16 && vw >= 768;
 
@@ -169,7 +161,6 @@ const OrientationTutorial = ({ open, onOpenChange }: Props) => {
         width: tooltipW,
       };
     } else {
-      // Place below or above depending on space
       const spaceBelow = vh - (rect.top + rect.height);
       const placeBelow = spaceBelow >= tooltipH + TOOLTIP_GAP + 16;
       const top = placeBelow
@@ -189,22 +180,16 @@ const OrientationTutorial = ({ open, onOpenChange }: Props) => {
     };
   }
 
-  // Spotlight: 4 dim overlays around the rect, leaving the target visible
   const dim = "rgba(15, 23, 42, 0.62)";
 
   return (
     <div className="fixed inset-0 z-[100]" aria-modal="true" role="dialog">
       {rect ? (
         <>
-          {/* Top */}
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: Math.max(0, rect.top - PADDING), background: dim }} onClick={close} />
-          {/* Bottom */}
           <div style={{ position: "fixed", top: rect.top + rect.height + PADDING, left: 0, right: 0, bottom: 0, background: dim }} onClick={close} />
-          {/* Left */}
           <div style={{ position: "fixed", top: Math.max(0, rect.top - PADDING), left: 0, width: Math.max(0, rect.left - PADDING), height: rect.height + PADDING * 2, background: dim }} onClick={close} />
-          {/* Right */}
           <div style={{ position: "fixed", top: Math.max(0, rect.top - PADDING), left: rect.left + rect.width + PADDING, right: 0, height: rect.height + PADDING * 2, background: dim }} onClick={close} />
-          {/* Highlight ring */}
           <div
             style={{
               position: "fixed",
@@ -224,7 +209,6 @@ const OrientationTutorial = ({ open, onOpenChange }: Props) => {
         <div className="fixed inset-0" style={{ background: dim }} onClick={close} />
       )}
 
-      {/* Tooltip / step card */}
       <div
         style={tooltipStyle}
         className="bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
@@ -289,7 +273,7 @@ const OrientationTutorial = ({ open, onOpenChange }: Props) => {
               disabled={isFirst}
               className="gap-1 h-8"
             >
-              <ChevronLeft className="w-4 h-4" /> Back
+              Back
             </Button>
             {!isLast ? (
               <>
@@ -297,7 +281,7 @@ const OrientationTutorial = ({ open, onOpenChange }: Props) => {
                   Skip tour
                 </button>
                 <Button size="sm" onClick={() => setIndex((i) => Math.min(steps.length - 1, i + 1))} className="gap-1 h-8">
-                  Next <ChevronRight className="w-4 h-4" />
+                  Next
                 </Button>
               </>
             ) : (
