@@ -644,7 +644,7 @@ const Tasks = () => {
 
             <div className="space-y-2">
               <Label htmlFor="task-assignee">Assign to</Label>
-              <Select value={formAssignee} onValueChange={setFormAssignee}>
+              <Select value={formAssignee} onValueChange={setFormAssignee} disabled={!!editingTemplate}>
                 <SelectTrigger id="task-assignee">
                   <SelectValue placeholder="Select an assignee" />
                 </SelectTrigger>
