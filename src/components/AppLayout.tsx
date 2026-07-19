@@ -19,6 +19,13 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
     }
   }, [loading, user, role]);
 
+  // Allow any page (e.g. Profile) to trigger the shared tutorial.
+  useEffect(() => {
+    const handleReplay = () => setTutorialOpen(true);
+    window.addEventListener("rally:replay-orientation" as any, handleReplay);
+    return () => window.removeEventListener("rally:replay-orientation" as any, handleReplay);
+  }, []);
+
 
   // Login page: render bare children (no shell)
   if (location.pathname === "/login") {

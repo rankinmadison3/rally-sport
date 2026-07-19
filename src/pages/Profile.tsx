@@ -4,7 +4,6 @@ import {
   User as UserIcon, Mail, Shield, LogOut, Loader2, Camera, Pencil, X,
   Phone, Cake, Ruler, Weight, Trophy, Users as UsersIcon, AlertCircle, PlayCircle,
 } from "lucide-react";
-import OrientationTutorial from "@/components/OrientationTutorial";
 import { z } from "zod";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -75,7 +74,6 @@ const Profile = () => {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [tutorialOpen, setTutorialOpen] = useState(false);
 
   const [form, setForm] = useState<ProfileForm>(emptyForm);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -576,14 +574,18 @@ const Profile = () => {
       {team && (
         <Section title="Team">
           <DetailRow icon={<UsersIcon className="w-4 h-4 text-primary" />} label="Team name" value={team.name} />
-          <DetailRow icon={<Shield className="w-4 h-4 text-primary" />} label="Team code" value={team.code} />
+          <div data-tour="profile-team-code">
+            <DetailRow icon={<Shield className="w-4 h-4 text-primary" />} label="Team code" value={team.code} />
+          </div>
         </Section>
       )}
 
       {!editing && (
         <div className="space-y-2">
           <Button
-            onClick={() => setTutorialOpen(true)}
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent("rally:replay-orientation", { bubbles: true }));
+            }}
             variant="outline"
             className="w-full gap-2"
           >
@@ -600,8 +602,6 @@ const Profile = () => {
           </div>
         </div>
       )}
-
-      <OrientationTutorial open={tutorialOpen} onOpenChange={setTutorialOpen} />
     </div>
   );
 };

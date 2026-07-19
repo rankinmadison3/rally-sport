@@ -1,7 +1,9 @@
 import { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Trophy,
   User as UserIcon,
+  Users as UsersIcon,
   X,
   Check,
   LucideIcon,
@@ -18,6 +20,8 @@ interface Step {
   body: string;
   /** CSS selector for the element to spotlight. Omit for centered intro/outro. */
   target?: string;
+  /** Route to navigate to before spotlighting this element. */
+  route?: string;
 }
 
 const WELCOME: Record<AppRole, { title: string; body: string }> = {
@@ -70,6 +74,8 @@ const TOOLTIP_GAP = 16;
 
 const OrientationTutorial = ({ open, onOpenChange }: Props) => {
   const { user, role } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [index, setIndex] = useState(0);
   const [rect, setRect] = useState<Rect | null>(null);
 
@@ -87,12 +93,15 @@ const OrientationTutorial = ({ open, onOpenChange }: Props) => {
         target: `[data-tour="${item.path}"]`,
       }));
 
-    // Profile lives at the bottom of the sidebar, outside the main nav list.
+    // Spotlight the team code row inside the Profile page.
     navSteps.push({
-      icon: UserIcon,
-      title: "Profile",
-      body: DESCRIPTIONS["/profile"],
-      target: `[data-tour="/profile"]`,
+      icon: UsersIcon,
+      title: isStaff ? "Roster & Team Code" : "Profile",
+      body: isStaff
+        ? "Share your 6-character team code from Profile so players and managers can join your team."
+        : DESCRIPTIONS["/profile"],
+      target: `[data-tour="profile-team-code"]`,
+      route: "/profile",
     });
 
     return [
@@ -106,29 +115,45 @@ const OrientationTutorial = ({ open, onOpenChange }: Props) => {
 
   const step = steps[index];
 
-  // Track the target element's rect (and re-measure on resize/scroll)
+  // Navigate to the step's route before spotlighting, if needed.
+  useEffect(() => {
+    if (!open || !step.route) return;
+    if (location.pathname !== step.route) {
+      navigate(step.route, { replace: true });
+    }
+  }, [open, step.route, location.pathname, navigate]);
+
+  // Track the target element's rect (and re-measure on resize/scroll/route change)
   useLayoutEffect(() => {
     if (!open || !step.target) { setRect(null); return; }
     let raf = 0;
+    let interval = 0;
+    let timeout = 0;
     const measure = () => {
       const el = document.querySelector(step.target!) as HTMLElement | null;
       if (!el) { setRect(null); return; }
       const r = el.getBoundingClientRect();
       setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
     };
-    // Wait one frame for render
+    // Wait one frame for render, then retry so navigation/content has time to complete.
     raf = requestAnimationFrame(() => {
       measure();
       setTimeout(measure, 120);
+      setTimeout(measure, 350);
+      // Keep polling for up to 3s in case data (e.g. team code) is still loading.
+      interval = window.setInterval(measure, 150);
+      timeout = window.setTimeout(() => window.clearInterval(interval), 3000);
     });
     window.addEventListener("resize", measure);
     window.addEventListener("scroll", measure, true);
     return () => {
       cancelAnimationFrame(raf);
+      window.clearInterval(interval);
+      window.clearTimeout(timeout);
       window.removeEventListener("resize", measure);
       window.removeEventListener("scroll", measure, true);
     };
-  }, [open, index, step.target]);
+  }, [open, index, step.target, location.pathname]);
 
   if (!open) return null;
 
