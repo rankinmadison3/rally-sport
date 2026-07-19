@@ -74,7 +74,6 @@ const Profile = () => {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [tutorialOpen, setTutorialOpen] = useState(false);
 
   const [form, setForm] = useState<ProfileForm>(emptyForm);
   const fileInputRef = useRef<HTMLInputElement>(null);
