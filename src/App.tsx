@@ -25,6 +25,7 @@ import Support from "@/pages/Support";
 import DeleteAccount from "@/pages/DeleteAccount";
 import ResetPassword from "@/pages/ResetPassword";
 import UpdatePassword from "@/pages/UpdatePassword";
+import FontPreview from "@/pages/FontPreview";
 
 const queryClient = new QueryClient();
 
