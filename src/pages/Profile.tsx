@@ -4,7 +4,6 @@ import {
   User as UserIcon, Mail, Shield, LogOut, Loader2, Camera, Pencil, X,
   Phone, Cake, Ruler, Weight, Trophy, Users as UsersIcon, AlertCircle, PlayCircle,
 } from "lucide-react";
-import OrientationTutorial from "@/components/OrientationTutorial";
 import { z } from "zod";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
