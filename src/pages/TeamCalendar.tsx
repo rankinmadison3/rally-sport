@@ -351,8 +351,35 @@ const TeamCalendar = () => {
                 )}
               </div>
             ))
-          ) : (
+          ) : dayTasks.length === 0 ? (
             <p className="text-sm text-muted-foreground">No events scheduled.</p>
+          ) : null}
+
+          {dayTasks.length > 0 && (
+            <div className="space-y-2 pt-1">
+              <p className="text-[11px] uppercase tracking-wider font-medium text-muted-foreground">My tasks</p>
+              {dayTasks.map((t) => (
+                <div key={t.id} className="p-3 rounded-lg bg-accent/40 flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-background flex items-center justify-center shrink-0">
+                    {t.done ? (
+                      <CheckCircle2 className="w-4 h-4 text-success" />
+                    ) : (
+                      <ClipboardCheck className="w-4 h-4 text-accent-foreground" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium ${t.done ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                      {t.text}
+                    </p>
+                    {t.category && (
+                      <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-background text-muted-foreground mt-1 inline-block">
+                        {t.category}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}
