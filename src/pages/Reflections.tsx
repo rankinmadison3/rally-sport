@@ -1,9 +1,40 @@
 import { useCallback, useEffect, useState } from "react";
-import { Send, Loader2, Sparkles, Users } from "lucide-react";
+import { Send, Loader2, Sparkles, Users, TrendingUp, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  Legend,
+} from "recharts";
+import {
+  format,
+  startOfDay,
+  startOfWeek,
+  startOfMonth,
+  subDays,
+  eachDayOfInterval,
+  eachWeekOfInterval,
+  eachMonthOfInterval,
+} from "date-fns";
+
+type TrendRange = "daily" | "weekly" | "monthly";
+
+interface TrendPoint {
+  key: string;
+  label: string;
+  mood: number | null;
+  communication: number | null;
+  intensity: number | null;
+  support: number | null;
+}
 
 const moods = [
   { emoji: "😫", label: "Struggling", value: 1 },
@@ -32,6 +63,122 @@ const Reflections = () => {
   const [sendingMood, setSendingMood] = useState(false);
   const [sendingSuggestion, setSendingSuggestion] = useState(false);
   const [sendingRatings, setSendingRatings] = useState(false);
+  const [loggedToday, setLoggedToday] = useState<boolean | null>(null);
+
+  // Check if the current user has already logged mood today
+  const checkTodayMood = useCallback(async () => {
+    if (!user) return;
+    const startIso = startOfDay(new Date()).toISOString();
+    const { data } = await supabase
+      .from("morale_checkins")
+      .select("id")
+      .eq("user_id", user.id)
+      .gte("created_at", startIso)
+      .limit(1);
+    setLoggedToday((data?.length ?? 0) > 0);
+  }, [user]);
+
+  useEffect(() => {
+    checkTodayMood();
+  }, [checkTodayMood]);
+
+  // Staff trend data
+  const [trendRange, setTrendRange] = useState<TrendRange>("weekly");
+  const [trendData, setTrendData] = useState<TrendPoint[]>([]);
+  const [trendLoading, setTrendLoading] = useState(false);
+
+  const loadTrends = useCallback(async () => {
+    if (!isStaff || !teamId) return;
+    setTrendLoading(true);
+
+    const now = new Date();
+    let start: Date;
+    let buckets: { key: string; label: string; start: Date; end: Date }[] = [];
+
+    if (trendRange === "daily") {
+      start = subDays(startOfDay(now), 13); // last 14 days
+      const days = eachDayOfInterval({ start, end: startOfDay(now) });
+      buckets = days.map((d) => ({
+        key: format(d, "yyyy-MM-dd"),
+        label: format(d, "MMM d"),
+        start: d,
+        end: new Date(d.getTime() + 24 * 60 * 60 * 1000),
+      }));
+    } else if (trendRange === "weekly") {
+      start = subDays(startOfWeek(now, { weekStartsOn: 1 }), 7 * 7); // last 8 weeks
+      const weeks = eachWeekOfInterval(
+        { start, end: startOfWeek(now, { weekStartsOn: 1 }) },
+        { weekStartsOn: 1 }
+      );
+      buckets = weeks.map((w) => ({
+        key: format(w, "yyyy-'W'II"),
+        label: format(w, "MMM d"),
+        start: w,
+        end: new Date(w.getTime() + 7 * 24 * 60 * 60 * 1000),
+      }));
+    } else {
+      start = new Date(now.getFullYear(), now.getMonth() - 5, 1); // last 6 months
+      const months = eachMonthOfInterval({ start, end: startOfMonth(now) });
+      buckets = months.map((m) => ({
+        key: format(m, "yyyy-MM"),
+        label: format(m, "MMM yy"),
+        start: m,
+        end: new Date(m.getFullYear(), m.getMonth() + 1, 1),
+      }));
+    }
+
+    const startIso = buckets[0].start.toISOString();
+
+    const [moodRes, ratingsRes] = await Promise.all([
+      supabase
+        .from("morale_checkins")
+        .select("mood, created_at")
+        .eq("team_id", teamId)
+        .gte("created_at", startIso),
+      supabase
+        .from("feedback_ratings")
+        .select("category, rating, created_at")
+        .eq("team_id", teamId)
+        .gte("created_at", startIso),
+    ]);
+
+    const moodRows = moodRes.data ?? [];
+    const rRows = ratingsRes.data ?? [];
+
+    const avg = (arr: number[]) =>
+      arr.length ? Number((arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2)) : null;
+
+    const points: TrendPoint[] = buckets.map((b) => {
+      const inBucket = <T extends { created_at: string }>(rows: T[]) =>
+        rows.filter((r) => {
+          const t = new Date(r.created_at).getTime();
+          return t >= b.start.getTime() && t < b.end.getTime();
+        });
+      const moods = inBucket(moodRows).map((r) => r.mood);
+      const ratingsInBucket = inBucket(rRows);
+      return {
+        key: b.key,
+        label: b.label,
+        mood: avg(moods),
+        communication: avg(
+          ratingsInBucket.filter((r) => r.category === "Team Communication").map((r) => r.rating)
+        ),
+        intensity: avg(
+          ratingsInBucket.filter((r) => r.category === "Training Intensity").map((r) => r.rating)
+        ),
+        support: avg(
+          ratingsInBucket.filter((r) => r.category === "Coach Support").map((r) => r.rating)
+        ),
+      };
+    });
+
+    setTrendData(points);
+    setTrendLoading(false);
+  }, [isStaff, teamId, trendRange]);
+
+  useEffect(() => {
+    loadTrends();
+  }, [loadTrends]);
 
   // Staff comparison data
   const [compareLoading, setCompareLoading] = useState(false);
@@ -92,6 +239,9 @@ const Reflections = () => {
 
   const submitMood = async () => {
     if (!user || !teamId) return toast.error("No team found");
+    if (!isStaff && loggedToday) {
+      return toast.info("You've already checked in today. Come back tomorrow!");
+    }
     setSendingMood(true);
     const { error } = await supabase.from("morale_checkins").insert({
       user_id: user.id,
@@ -99,9 +249,19 @@ const Reflections = () => {
       mood: selectedMood,
     });
     setSendingMood(false);
-    if (error) return toast.error(error.message);
-    toast.success(isStaff ? "Read logged" : "Mood logged");
-    if (isStaff) loadComparison();
+    if (error) {
+      if ((error as { code?: string }).code === "23505") {
+        setLoggedToday(true);
+        return toast.info("You've already checked in today. Come back tomorrow!");
+      }
+      return toast.error(error.message);
+    }
+    setLoggedToday(true);
+    toast.success(isStaff ? "Read logged" : "Mood logged — see you tomorrow!");
+    if (isStaff) {
+      loadComparison();
+      loadTrends();
+    }
   };
 
   const submitSuggestion = async () => {
@@ -156,7 +316,127 @@ const Reflections = () => {
           </p>
         </div>
 
-        {/* Team mood read */}
+        {/* Trends */}
+        <div className="bg-card rounded-xl p-5 shadow-[var(--card-shadow)] space-y-4">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <h2 className="font-display font-semibold text-card-foreground flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-primary" /> Team Trends
+              </h2>
+              <p className="text-xs text-muted-foreground mt-1">
+                Player mood (1–5) and category ratings (1–10) over time.
+              </p>
+            </div>
+            <div className="inline-flex rounded-lg bg-muted p-0.5 text-xs font-medium">
+              {(["daily", "weekly", "monthly"] as TrendRange[]).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setTrendRange(r)}
+                  className={`px-3 py-1.5 rounded-md capitalize transition-colors ${
+                    trendRange === r
+                      ? "bg-card text-card-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {trendLoading ? (
+            <div className="h-64 flex items-center justify-center">
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : trendData.every(
+              (p) =>
+                p.mood == null &&
+                p.communication == null &&
+                p.intensity == null &&
+                p.support == null
+            ) ? (
+            <div className="h-64 flex items-center justify-center text-sm text-muted-foreground">
+              No data yet for this range.
+            </div>
+          ) : (
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={trendData} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                    stroke="hsl(var(--border))"
+                  />
+                  <YAxis
+                    yAxisId="mood"
+                    domain={[1, 5]}
+                    tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                    stroke="hsl(var(--border))"
+                  />
+                  <YAxis
+                    yAxisId="rating"
+                    orientation="right"
+                    domain={[1, 10]}
+                    tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                    stroke="hsl(var(--border))"
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Line
+                    yAxisId="mood"
+                    type="monotone"
+                    dataKey="mood"
+                    name="Mood (1–5)"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2.5}
+                    dot={{ r: 3 }}
+                    connectNulls
+                  />
+                  <Line
+                    yAxisId="rating"
+                    type="monotone"
+                    dataKey="communication"
+                    name="Communication"
+                    stroke="hsl(var(--chart-2, 217 91% 60%))"
+                    strokeWidth={1.75}
+                    dot={false}
+                    connectNulls
+                  />
+                  <Line
+                    yAxisId="rating"
+                    type="monotone"
+                    dataKey="intensity"
+                    name="Intensity"
+                    stroke="hsl(var(--chart-3, 32 95% 55%))"
+                    strokeWidth={1.75}
+                    dot={false}
+                    connectNulls
+                  />
+                  <Line
+                    yAxisId="rating"
+                    type="monotone"
+                    dataKey="support"
+                    name="Coach Support"
+                    stroke="hsl(var(--chart-4, 142 71% 45%))"
+                    strokeWidth={1.75}
+                    dot={false}
+                    connectNulls
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+
+
         <div className="bg-card rounded-xl p-5 shadow-[var(--card-shadow)] space-y-4">
           <h2 className="font-display font-semibold text-card-foreground text-center">
             How do you read the team's mood today?
@@ -332,28 +612,46 @@ const Reflections = () => {
       {/* Mood */}
       <div className="bg-card rounded-xl p-5 shadow-[var(--card-shadow)] space-y-4">
         <h2 className="font-display font-semibold text-card-foreground text-center">How are you feeling today?</h2>
-        <div className="flex justify-between items-center px-2">
-          {moods.map((mood) => (
-            <button
-              key={mood.value}
-              onClick={() => setSelectedMood(mood.value)}
-              className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${
-                selectedMood === mood.value ? "bg-accent scale-110" : "opacity-50 hover:opacity-75"
-              }`}
-            >
-              <span className="text-3xl">{mood.emoji}</span>
-              <span className="text-[10px] font-medium text-muted-foreground">{mood.label}</span>
-            </button>
-          ))}
-        </div>
-        <div className="w-full bg-muted rounded-full h-2">
-          <div className="h-full bg-primary rounded-full transition-all duration-300" style={{ width: `${(selectedMood / 5) * 100}%` }} />
-        </div>
-        <Button onClick={submitMood} disabled={sendingMood} className="w-full">
-          {sendingMood ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-          Log mood
-        </Button>
+        {loggedToday ? (
+          <div className="flex flex-col items-center gap-2 py-4 text-center">
+            <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
+              <CheckCircle2 className="w-6 h-6 text-success" />
+            </div>
+            <p className="text-sm font-medium text-card-foreground">You've checked in today</p>
+            <p className="text-xs text-muted-foreground">
+              One check-in per day keeps the signal clean. See you tomorrow!
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="flex justify-between items-center px-2">
+              {moods.map((mood) => (
+                <button
+                  key={mood.value}
+                  onClick={() => setSelectedMood(mood.value)}
+                  className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${
+                    selectedMood === mood.value ? "bg-accent scale-110" : "opacity-50 hover:opacity-75"
+                  }`}
+                >
+                  <span className="text-3xl">{mood.emoji}</span>
+                  <span className="text-[10px] font-medium text-muted-foreground">{mood.label}</span>
+                </button>
+              ))}
+            </div>
+            <div className="w-full bg-muted rounded-full h-2">
+              <div
+                className="h-full bg-primary rounded-full transition-all duration-300"
+                style={{ width: `${(selectedMood / 5) * 100}%` }}
+              />
+            </div>
+            <Button onClick={submitMood} disabled={sendingMood} className="w-full">
+              {sendingMood ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              Log mood
+            </Button>
+          </>
+        )}
       </div>
+
 
       {/* Anonymous note */}
       <div className="bg-card rounded-xl p-5 shadow-[var(--card-shadow)] space-y-4">

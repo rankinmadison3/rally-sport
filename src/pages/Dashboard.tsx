@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { TrendingUp, FileText, Users, Trophy, Copy, Check, Pencil, ChevronDown, ChevronUp, ClipboardCheck, ChevronRight, AlertCircle, X as XIcon } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { TrendingUp, FileText, Users, Trophy, Copy, Check, Pencil, ChevronDown, ChevronUp, ClipboardCheck, ChevronRight, AlertCircle, X as XIcon, Sparkles } from "lucide-react";
+import { format, parseISO, startOfDay } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -21,6 +21,19 @@ const Dashboard = () => {
   const [editName, setEditName] = useState("");
   const [collapsed, setCollapsed] = useState(false);
   const [unloggedGames, setUnloggedGames] = useState<{ id: string; label: string | null; event_date: string }[]>([]);
+  const [needsCheckin, setNeedsCheckin] = useState(false);
+
+  useEffect(() => {
+    if (role !== "player" || !user) return;
+    const startIso = startOfDay(new Date()).toISOString();
+    supabase
+      .from("morale_checkins")
+      .select("id")
+      .eq("user_id", user.id)
+      .gte("created_at", startIso)
+      .limit(1)
+      .then(({ data }) => setNeedsCheckin((data?.length ?? 0) === 0));
+  }, [role, user]);
 
   const fetchUnloggedGames = async () => {
     if (!teamId || !(role === "coach" || role === "manager")) return;
@@ -303,6 +316,27 @@ const Dashboard = () => {
         );
       })()}
 
+
+      {/* Daily reflection reminder (players) */}
+      {role === "player" && needsCheckin && (
+        <button
+          onClick={() => navigate("/reflections")}
+          className="w-full rounded-xl p-4 flex items-center gap-3 text-left transition-transform hover:scale-[1.01] shadow-[var(--card-shadow)] border border-primary/20 bg-primary/5"
+        >
+          <div className="w-10 h-10 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
+            <Sparkles className="w-5 h-5 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-display font-semibold text-card-foreground">
+              Daily reflection
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Log today's mood — takes 5 seconds.
+            </p>
+          </div>
+          <ChevronRight className="w-4 h-4 text-primary shrink-0" />
+        </button>
+      )}
 
       {/* Tasks shortcut */}
       <button
