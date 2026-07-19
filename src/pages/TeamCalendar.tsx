@@ -217,6 +217,7 @@ const TeamCalendar = () => {
           {Array.from({ length: daysInMonth }).map((_, i) => {
             const day = i + 1;
             const dayEvts = getEventsForDay(day);
+            const dayTsks = getTasksForDay(day);
             const isSelected = selectedDay === day;
             const hasGame = dayEvts.some((e) => e.event_type === "game");
             const hasAbsence = dayEvts.some((e) => e.event_type === "absence");
@@ -224,6 +225,7 @@ const TeamCalendar = () => {
             const hasOther = dayEvts.some((e) => !["game", "absence", "practice"].includes(e.event_type));
             const hasWin = dayEvts.some((e) => e.game_result === "win");
             const hasLoss = dayEvts.some((e) => e.game_result === "loss");
+            const hasTask = dayTsks.length > 0;
             return (
               <button
                 key={day}
@@ -233,7 +235,7 @@ const TeamCalendar = () => {
                 }`}
               >
                 {day}
-                {dayEvts.length > 0 && (
+                {(dayEvts.length > 0 || hasTask) && (
                   <div className="absolute bottom-1 flex gap-0.5">
                     {hasGame && !hasWin && !hasLoss && <Trophy className="w-4 h-4 text-primary" />}
                     {hasWin && <div className="w-3 h-3 rounded-full bg-success" />}
@@ -241,6 +243,7 @@ const TeamCalendar = () => {
                     {hasAbsence && <XCircle className="w-4 h-4 text-destructive" />}
                     {hasPractice && !hasGame && <Dumbbell className="w-4 h-4 text-success" />}
                     {hasOther && !hasGame && !hasPractice && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
+                    {hasTask && <ClipboardCheck className="w-4 h-4 text-accent-foreground" />}
                   </div>
                 )}
               </button>
