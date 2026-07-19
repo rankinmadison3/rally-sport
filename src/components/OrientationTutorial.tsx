@@ -74,6 +74,8 @@ const TOOLTIP_GAP = 16;
 
 const OrientationTutorial = ({ open, onOpenChange }: Props) => {
   const { user, role } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [index, setIndex] = useState(0);
   const [rect, setRect] = useState<Rect | null>(null);
 
@@ -91,12 +93,15 @@ const OrientationTutorial = ({ open, onOpenChange }: Props) => {
         target: `[data-tour="${item.path}"]`,
       }));
 
-    // Profile lives at the bottom of the sidebar, outside the main nav list.
+    // Spotlight the team code row inside the Profile page.
     navSteps.push({
-      icon: UserIcon,
-      title: "Profile",
-      body: DESCRIPTIONS["/profile"],
-      target: `[data-tour="/profile"]`,
+      icon: UsersIcon,
+      title: isStaff ? "Roster & Team Code" : "Profile",
+      body: isStaff
+        ? "Share your 6-character team code from Profile so players and managers can join your team."
+        : DESCRIPTIONS["/profile"],
+      target: `[data-tour="profile-team-code"]`,
+      route: "/profile",
     });
 
     return [
