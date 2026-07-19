@@ -576,7 +576,9 @@ const Profile = () => {
       {team && (
         <Section title="Team">
           <DetailRow icon={<UsersIcon className="w-4 h-4 text-primary" />} label="Team name" value={team.name} />
-          <DetailRow icon={<Shield className="w-4 h-4 text-primary" />} label="Team code" value={team.code} />
+          <div data-tour="profile-team-code">
+            <DetailRow icon={<Shield className="w-4 h-4 text-primary" />} label="Team code" value={team.code} />
+          </div>
         </Section>
       )}
 
