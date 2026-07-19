@@ -202,11 +202,41 @@ const Dashboard = () => {
     <div className="p-4 space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
+        <div className="min-w-0 flex-1 pr-3">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
             {role === "coach" ? "Coach's View" : role === "manager" ? "Manager's View" : "Player's View"}
           </p>
-          <h1 className="text-2xl font-bold font-display text-foreground">Dashboard</h1>
+          {editing && (role === "coach" || role === "manager") ? (
+            <div className="mt-1 flex items-center gap-2">
+              <input
+                autoFocus
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleRename();
+                  if (e.key === "Escape") setEditing(false);
+                }}
+                className="text-3xl md:text-4xl font-bold font-display text-foreground bg-transparent border-b border-primary outline-none w-full min-w-0"
+              />
+              <button onClick={handleRename} className="text-xs font-semibold text-primary hover:underline shrink-0">Save</button>
+              <button onClick={() => setEditing(false)} className="text-xs font-semibold text-muted-foreground hover:underline shrink-0">Cancel</button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 min-w-0">
+              <h1 className="text-3xl md:text-4xl font-bold font-display text-foreground truncate">
+                {teamName || "Dashboard"}
+              </h1>
+              {(role === "coach" || role === "manager") && teamName && (
+                <button
+                  onClick={() => { setEditName(teamName); setEditing(true); }}
+                  aria-label="Edit team name"
+                  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0"
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          )}
         </div>
         <button
           onClick={() => navigate("/profile")}
