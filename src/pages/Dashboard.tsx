@@ -338,22 +338,45 @@ const Dashboard = () => {
         </button>
       )}
 
-      {/* Tasks shortcut */}
+      {/* Tasks shortcut - premium tile */}
       <button
         onClick={() => navigate("/tasks")}
-        className="w-full bg-card rounded-xl p-4 shadow-[var(--card-shadow)] flex items-center gap-3 hover:bg-accent/50 transition-colors text-left"
+        className="relative overflow-hidden w-full rounded-2xl p-5 shadow-[var(--card-shadow)] text-left transition-transform hover:scale-[1.01] bg-card border border-border"
       >
-        <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center shrink-0">
-          <ClipboardCheck className="w-5 h-5 text-accent-foreground" />
+        {/* decorative diagonal accent */}
+        <div
+          className="pointer-events-none absolute -right-16 -top-16 w-40 h-40 rounded-full opacity-[0.08]"
+          style={{ background: "hsl(var(--primary))" }}
+        />
+        <div
+          className="pointer-events-none absolute -right-6 bottom-[-3rem] w-32 h-32 rounded-full opacity-[0.05]"
+          style={{ background: "hsl(var(--primary))" }}
+        />
+        <div className="relative flex items-center gap-4">
+          <div
+            className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-md"
+            style={{
+              background:
+                "linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.75) 100%)",
+            }}
+          >
+            <ClipboardCheck className="w-6 h-6 text-primary-foreground" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary/80">
+              Action steps
+            </p>
+            <p className="font-display font-bold text-lg text-card-foreground leading-tight mt-0.5">
+              Tasks
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {role === "player" ? "View your assignments" : "Assign and track team tasks"}
+            </p>
+          </div>
+          <ChevronRight className="w-5 h-5 text-primary shrink-0" />
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-display font-semibold text-card-foreground">Tasks</p>
-          <p className="text-xs text-muted-foreground">
-            {role === "player" ? "View your assignments" : "Assign and track team tasks"}
-          </p>
-        </div>
-        <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
       </button>
+
 
       {/* Unlogged games (coach/manager) */}
       {(role === "coach" || role === "manager") && unloggedGames.length > 0 && (
@@ -412,22 +435,96 @@ const Dashboard = () => {
       )}
 
 
-      {/* Team Morale Graph */}
-      <div className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="font-display font-semibold text-card-foreground">Team Morale</h2>
-          <div className="flex items-center gap-1 text-success text-xs font-medium">
-            <TrendingUp className="w-3.5 h-3.5" />
-            <span>Trend</span>
+      {/* Team Morale - hero card */}
+      {(() => {
+        const data = moraleData.length > 0 ? moraleData : [50, 50, 50, 50, 50, 50, 50];
+        const avg = Math.round(data.reduce((a, b) => a + b, 0) / data.length);
+        const last = data[data.length - 1] ?? 0;
+        const first = data[0] ?? 0;
+        const delta = last - first;
+        const w = 300;
+        const h = 96;
+        const stepX = data.length > 1 ? w / (data.length - 1) : w;
+        const points = data.map((v, i) => {
+          const x = i * stepX;
+          const y = h - (v / 100) * (h - 8) - 4;
+          return { x, y };
+        });
+        // smooth path via simple quadratic curves
+        let path = `M ${points[0].x} ${points[0].y}`;
+        for (let i = 1; i < points.length; i++) {
+          const prev = points[i - 1];
+          const curr = points[i];
+          const midX = (prev.x + curr.x) / 2;
+          path += ` Q ${midX} ${prev.y} ${midX} ${(prev.y + curr.y) / 2} T ${curr.x} ${curr.y}`;
+        }
+        const areaPath = `${path} L ${w} ${h} L 0 ${h} Z`;
+        const gradId = "morale-fill";
+        return (
+          <div
+            className="relative overflow-hidden rounded-2xl p-5 text-primary-foreground shadow-lg"
+            style={{
+              background:
+                "linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.82) 100%)",
+            }}
+          >
+            <div className="pointer-events-none absolute -left-14 -top-14 w-44 h-44 rounded-full border border-white/10" />
+            <div className="pointer-events-none absolute -left-4 -bottom-20 w-40 h-40 rounded-full border border-white/10" />
+
+            <div className="relative flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] opacity-80">
+                  Team Morale
+                </p>
+                <div className="mt-1 flex items-baseline gap-2 font-display font-bold leading-none">
+                  <span className="text-5xl">{avg}</span>
+                  <span className="text-lg opacity-70">/ 100</span>
+                </div>
+                <p className="mt-2 text-xs opacity-85">
+                  Last {data.length} check-in{data.length === 1 ? "" : "s"}
+                </p>
+              </div>
+              <div className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold backdrop-blur-sm">
+                <TrendingUp className={`w-3.5 h-3.5 ${delta < 0 ? "rotate-180" : ""}`} />
+                <span>
+                  {delta > 0 ? "+" : ""}
+                  {delta}
+                </span>
+              </div>
+            </div>
+
+            <div className="relative mt-4 -mx-1">
+              <svg viewBox={`0 0 ${w} ${h}`} width="100%" height={h} preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id={gradId} x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--primary-foreground))" stopOpacity="0.35" />
+                    <stop offset="100%" stopColor="hsl(var(--primary-foreground))" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+                <path d={areaPath} fill={`url(#${gradId})`} />
+                <path
+                  d={path}
+                  fill="none"
+                  stroke="hsl(var(--primary-foreground))"
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                {points.map((p, i) => (
+                  <circle
+                    key={i}
+                    cx={p.x}
+                    cy={p.y}
+                    r={i === points.length - 1 ? 4 : 0}
+                    fill="hsl(var(--primary-foreground))"
+                  />
+                ))}
+              </svg>
+            </div>
           </div>
-        </div>
-        <div className="h-32 flex items-end gap-1.5">
-          {moraleData.map((val, i) => (
-            <div key={i} className="flex-1 rounded-t bg-primary transition-all duration-300" style={{ height: `${(val / 100) * 128}px` }} />
-          ))}
-        </div>
-        <p className="text-xs text-muted-foreground text-center">Last {moraleData.length} check-ins</p>
-      </div>
+        );
+      })()}
+
 
       {/* Active Feedback */}
       <div className="space-y-3">
