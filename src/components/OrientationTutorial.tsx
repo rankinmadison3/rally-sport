@@ -127,22 +127,29 @@ const OrientationTutorial = ({ open, onOpenChange }: Props) => {
   useLayoutEffect(() => {
     if (!open || !step.target) { setRect(null); return; }
     let raf = 0;
+    let interval = 0;
+    let timeout = 0;
     const measure = () => {
       const el = document.querySelector(step.target!) as HTMLElement | null;
       if (!el) { setRect(null); return; }
       const r = el.getBoundingClientRect();
       setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
     };
-    // Wait one frame for render, then retry so navigation has time to complete.
+    // Wait one frame for render, then retry so navigation/content has time to complete.
     raf = requestAnimationFrame(() => {
       measure();
       setTimeout(measure, 120);
       setTimeout(measure, 350);
+      // Keep polling for up to 3s in case data (e.g. team code) is still loading.
+      interval = window.setInterval(measure, 150);
+      timeout = window.setTimeout(() => window.clearInterval(interval), 3000);
     });
     window.addEventListener("resize", measure);
     window.addEventListener("scroll", measure, true);
     return () => {
       cancelAnimationFrame(raf);
+      window.clearInterval(interval);
+      window.clearTimeout(timeout);
       window.removeEventListener("resize", measure);
       window.removeEventListener("scroll", measure, true);
     };
