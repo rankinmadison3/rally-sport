@@ -204,71 +204,105 @@ const Dashboard = () => {
         </button>
       </div>
 
-      {/* Team Code Card - Coach Only */}
-      {(role === "coach" || role === "manager") && teamCode && (
-        <div className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="font-display font-semibold text-card-foreground">Your Team</h2>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5">
-                <Users className="w-4 h-4 text-primary" />
-                <span className="text-sm font-bold text-primary">{teamMembers.length} players</span>
+      {/* Season Progress - Hero */}
+      {(() => {
+        const size = 92;
+        const stroke = 8;
+        const r = (size - stroke) / 2;
+        const c = 2 * Math.PI * r;
+        const dash = total > 0 ? (winPct / 100) * c : 0;
+        const canManageSeason = role === "coach" || role === "manager";
+        return (
+          <div
+            onClick={() => canManageSeason && navigate("/season")}
+            role={canManageSeason ? "button" : undefined}
+            className="relative overflow-hidden rounded-2xl p-5 text-primary-foreground shadow-lg cursor-pointer transition-transform hover:scale-[1.01]"
+            style={{
+              background:
+                "linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.82) 100%)",
+            }}
+          >
+            {/* Decorative rings */}
+            <div className="pointer-events-none absolute -right-12 -top-12 w-48 h-48 rounded-full border border-white/10" />
+            <div className="pointer-events-none absolute -right-4 -bottom-16 w-40 h-40 rounded-full border border-white/10" />
+
+            <div className="relative flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] opacity-80">
+                  Season
+                </p>
+                <div className="mt-1 flex items-baseline gap-2 font-display font-bold leading-none">
+                  <span className="text-5xl">{wins}</span>
+                  <span className="text-3xl opacity-70">–</span>
+                  <span className="text-5xl">{losses}</span>
+                </div>
+                <p className="mt-2 text-xs opacity-85">
+                  {total === 0
+                    ? canManageSeason
+                      ? "Log your first result →"
+                      : "No games played yet"
+                    : `${total} game${total === 1 ? "" : "s"} played · ${winPct}% win rate`}
+                </p>
               </div>
-              <button onClick={() => setCollapsed(!collapsed)} className="w-7 h-7 rounded-full bg-muted flex items-center justify-center">
-                {collapsed ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronUp className="w-4 h-4 text-muted-foreground" />}
-              </button>
-            </div>
-          </div>
-          {!collapsed && (
-            <>
-              {editing ? (
-                <div className="flex items-center gap-2">
-                  <input
-                    autoFocus
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleRename()}
-                    className="flex-1 text-sm bg-muted rounded-lg px-3 py-1.5 text-foreground outline-none focus:ring-2 focus:ring-primary"
+
+              <div className="relative shrink-0" style={{ width: size, height: size }}>
+                <svg width={size} height={size} className="-rotate-90">
+                  <circle
+                    cx={size / 2}
+                    cy={size / 2}
+                    r={r}
+                    stroke="hsl(var(--primary-foreground) / 0.2)"
+                    strokeWidth={stroke}
+                    fill="none"
                   />
-                  <button onClick={handleRename} className="text-xs font-medium text-primary">Save</button>
-                  <button onClick={() => setEditing(false)} className="text-xs text-muted-foreground">Cancel</button>
+                  <circle
+                    cx={size / 2}
+                    cy={size / 2}
+                    r={r}
+                    stroke="hsl(var(--primary-foreground))"
+                    strokeWidth={stroke}
+                    strokeLinecap="round"
+                    strokeDasharray={`${dash} ${c}`}
+                    fill="none"
+                    className="transition-all duration-700"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="font-display font-bold text-lg leading-none">{winPct}%</span>
+                  <span className="text-[9px] uppercase tracking-wider opacity-75 mt-0.5">Win</span>
                 </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <p className="text-sm text-muted-foreground">{teamName}</p>
-                  <button onClick={() => { setEditName(teamName); setEditing(true); }}>
-                    <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
-                  </button>
-                </div>
-              )}
-              <div className="flex items-center gap-3">
-                <code className="flex-1 text-2xl font-mono font-bold tracking-[0.3em] text-center py-2 bg-muted rounded-lg text-foreground">
-                  {teamCode}
-                </code>
-                <button
-                  onClick={handleCopyCode}
-                  className="w-10 h-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shrink-0"
-                >
-                  {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-                </button>
               </div>
-              <p className="text-xs text-muted-foreground text-center">Share this code with players to join</p>
-              {teamMembers.length > 0 && (
-                <div className="border-t border-border pt-3 space-y-2">
-                  {teamMembers.map((m, i) => (
-                    <div key={i} className="flex items-center justify-between text-sm">
-                      <span className="text-card-foreground">{m.display_name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(m.joined_at).toLocaleDateString()}
-                      </span>
-                    </div>
+            </div>
+
+            {/* Segmented game bar */}
+            <div className="relative mt-4">
+              {total === 0 ? (
+                <div className="h-2 rounded-full bg-white/15" />
+              ) : (
+                <div className="flex gap-1">
+                  {Array.from({ length: total }).map((_, i) => (
+                    <div
+                      key={i}
+                      className={`flex-1 h-2 rounded-sm ${
+                        i < wins ? "bg-white" : "bg-white/20 border border-white/30"
+                      }`}
+                    />
                   ))}
                 </div>
               )}
-            </>
-          )}
-        </div>
-      )}
+              <div className="mt-2 flex items-center justify-between text-[10px] font-medium opacity-80">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-sm bg-white" /> Wins {wins}
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-sm border border-white/60" /> Losses {losses}
+                </span>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
 
       {/* Tasks shortcut */}
       <button
