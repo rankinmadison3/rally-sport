@@ -21,6 +21,19 @@ const Dashboard = () => {
   const [editName, setEditName] = useState("");
   const [collapsed, setCollapsed] = useState(false);
   const [unloggedGames, setUnloggedGames] = useState<{ id: string; label: string | null; event_date: string }[]>([]);
+  const [needsCheckin, setNeedsCheckin] = useState(false);
+
+  useEffect(() => {
+    if (role !== "player" || !user) return;
+    const startIso = startOfDay(new Date()).toISOString();
+    supabase
+      .from("morale_checkins")
+      .select("id")
+      .eq("user_id", user.id)
+      .gte("created_at", startIso)
+      .limit(1)
+      .then(({ data }) => setNeedsCheckin((data?.length ?? 0) === 0));
+  }, [role, user]);
 
   const fetchUnloggedGames = async () => {
     if (!teamId || !(role === "coach" || role === "manager")) return;
