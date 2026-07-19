@@ -628,7 +628,7 @@ const Tasks = () => {
       <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) resetForm(); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>New Task</DialogTitle>
+            <DialogTitle>{editingTask ? "Edit Task" : editingTemplate ? "Edit Template" : "New Task"}</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
