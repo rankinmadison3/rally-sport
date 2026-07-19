@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import DesktopSidebar from "./DesktopSidebar";
 
 import MobileBottomNav from "./MobileBottomNav";
-import OrientationTutorial, { hasSeenOrientation, markOrientationSeen } from "./OrientationTutorial";
+import OrientationTutorial, { hasSeenOrientation } from "./OrientationTutorial";
 import logo from "@/assets/rally-sport-logo.png";
 
 const AppLayout = ({ children }: { children: ReactNode }) => {
