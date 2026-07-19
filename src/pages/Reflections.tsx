@@ -63,6 +63,122 @@ const Reflections = () => {
   const [sendingMood, setSendingMood] = useState(false);
   const [sendingSuggestion, setSendingSuggestion] = useState(false);
   const [sendingRatings, setSendingRatings] = useState(false);
+  const [loggedToday, setLoggedToday] = useState<boolean | null>(null);
+
+  // Check if the current user has already logged mood today
+  const checkTodayMood = useCallback(async () => {
+    if (!user) return;
+    const startIso = startOfDay(new Date()).toISOString();
+    const { data } = await supabase
+      .from("morale_checkins")
+      .select("id")
+      .eq("user_id", user.id)
+      .gte("created_at", startIso)
+      .limit(1);
+    setLoggedToday((data?.length ?? 0) > 0);
+  }, [user]);
+
+  useEffect(() => {
+    checkTodayMood();
+  }, [checkTodayMood]);
+
+  // Staff trend data
+  const [trendRange, setTrendRange] = useState<TrendRange>("weekly");
+  const [trendData, setTrendData] = useState<TrendPoint[]>([]);
+  const [trendLoading, setTrendLoading] = useState(false);
+
+  const loadTrends = useCallback(async () => {
+    if (!isStaff || !teamId) return;
+    setTrendLoading(true);
+
+    const now = new Date();
+    let start: Date;
+    let buckets: { key: string; label: string; start: Date; end: Date }[] = [];
+
+    if (trendRange === "daily") {
+      start = subDays(startOfDay(now), 13); // last 14 days
+      const days = eachDayOfInterval({ start, end: startOfDay(now) });
+      buckets = days.map((d) => ({
+        key: format(d, "yyyy-MM-dd"),
+        label: format(d, "MMM d"),
+        start: d,
+        end: new Date(d.getTime() + 24 * 60 * 60 * 1000),
+      }));
+    } else if (trendRange === "weekly") {
+      start = subDays(startOfWeek(now, { weekStartsOn: 1 }), 7 * 7); // last 8 weeks
+      const weeks = eachWeekOfInterval(
+        { start, end: startOfWeek(now, { weekStartsOn: 1 }) },
+        { weekStartsOn: 1 }
+      );
+      buckets = weeks.map((w) => ({
+        key: format(w, "yyyy-'W'II"),
+        label: format(w, "MMM d"),
+        start: w,
+        end: new Date(w.getTime() + 7 * 24 * 60 * 60 * 1000),
+      }));
+    } else {
+      start = new Date(now.getFullYear(), now.getMonth() - 5, 1); // last 6 months
+      const months = eachMonthOfInterval({ start, end: startOfMonth(now) });
+      buckets = months.map((m) => ({
+        key: format(m, "yyyy-MM"),
+        label: format(m, "MMM yy"),
+        start: m,
+        end: new Date(m.getFullYear(), m.getMonth() + 1, 1),
+      }));
+    }
+
+    const startIso = buckets[0].start.toISOString();
+
+    const [moodRes, ratingsRes] = await Promise.all([
+      supabase
+        .from("morale_checkins")
+        .select("mood, created_at")
+        .eq("team_id", teamId)
+        .gte("created_at", startIso),
+      supabase
+        .from("feedback_ratings")
+        .select("category, rating, created_at")
+        .eq("team_id", teamId)
+        .gte("created_at", startIso),
+    ]);
+
+    const moodRows = moodRes.data ?? [];
+    const rRows = ratingsRes.data ?? [];
+
+    const avg = (arr: number[]) =>
+      arr.length ? Number((arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2)) : null;
+
+    const points: TrendPoint[] = buckets.map((b) => {
+      const inBucket = <T extends { created_at: string }>(rows: T[]) =>
+        rows.filter((r) => {
+          const t = new Date(r.created_at).getTime();
+          return t >= b.start.getTime() && t < b.end.getTime();
+        });
+      const moods = inBucket(moodRows).map((r) => r.mood);
+      const ratingsInBucket = inBucket(rRows);
+      return {
+        key: b.key,
+        label: b.label,
+        mood: avg(moods),
+        communication: avg(
+          ratingsInBucket.filter((r) => r.category === "Team Communication").map((r) => r.rating)
+        ),
+        intensity: avg(
+          ratingsInBucket.filter((r) => r.category === "Training Intensity").map((r) => r.rating)
+        ),
+        support: avg(
+          ratingsInBucket.filter((r) => r.category === "Coach Support").map((r) => r.rating)
+        ),
+      };
+    });
+
+    setTrendData(points);
+    setTrendLoading(false);
+  }, [isStaff, teamId, trendRange]);
+
+  useEffect(() => {
+    loadTrends();
+  }, [loadTrends]);
 
   // Staff comparison data
   const [compareLoading, setCompareLoading] = useState(false);
