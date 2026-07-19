@@ -1,45 +1,31 @@
-# App Store Prep — Final In-App Work
+## Goal
+On the Dashboard, move the **Your Team** card (team code + roster) to the very bottom, and promote **Season Progress** into a bigger, more visual hero at the top.
 
-I'll do everything I can from inside Lovable. A few items (Xcode signing, App Store Connect submission, buying a support domain) can only be done on your Mac after export — I'll leave you a short checklist for those.
+## Order change (`src/pages/Dashboard.tsx`)
 
-## What I'll build
+Current: Header → Your Team → Tasks → Log Result → Season Progress → Team Morale → Active Feedback
 
-### 1. Forgot password flow
-- New `/reset-password` page (enters email → `supabase.auth.resetPasswordForEmail`).
-- New `/update-password` page (handles the recovery link → `supabase.auth.updateUser({ password })`).
-- Wire the "Forgot password?" button on Login to `/reset-password`.
+New: Header → **Season Progress (visual hero)** → Tasks → Log Result → Team Morale → Active Feedback → **Your Team (bottom)**
 
-### 2. Age gate at signup (13+)
-- Add a required "Date of birth" field on the signup form.
-- Block signup client-side if age < 13, with a clear error message.
-- Also enforce in the `signup_with_role` RPC (reject if DOB missing / under 13) as a server-side backstop.
+No data-fetching, permissions, or state logic change — only presentation reorder + the Season card redesign.
 
-### 3. Capacitor iOS setup (files only — you'll run `npx cap add ios` after export)
-- Add `@capacitor/core`, `@capacitor/cli`, `@capacitor/ios`, `@capacitor/assets` to `package.json`.
-- Create `capacitor.config.ts` with:
-  - `appId: app.lovable.f2523576796643c0853666f9d43d3d2a`
-  - `appName: Rally Sport`
-  - Dev-only hot-reload `server.url` block, commented with instructions to remove for App Store builds.
-- Add `resources/icon.png` (1024×1024) and `resources/splash.png` (2732×2732) generated with the image tool (crimson Rally Sport mark), ready for `npx capacitor-assets generate`.
+## Season Progress redesign (top of page)
 
-### 4. iOS polish
-- Add `NSPhotoLibraryUsageDescription` and `NSCameraUsageDescription` guidance to the post-export checklist (Info.plist lives in the iOS project, which doesn't exist until you run `npx cap add ios`).
-- Add safe-area top inset to `DesktopHeader`/`MobileLayout` where a fixed top bar exists.
+Keep it click-through to `/season` for coach/manager. Turn the current thin bar into a scoreboard-style hero card:
 
-### 5. Support email
-- Ask you for the real support email address (see question below) and drop it into `src/pages/Support.tsx` + Privacy policy contact line.
+- Crimson gradient surface using existing tokens (`bg-primary` → `hsl(var(--primary)/0.85)`), rounded-2xl, larger shadow.
+- Left side: giant `W–L` scoreline in Space Grotesk display weight, plus small "SEASON" eyebrow.
+- Right side: a circular progress ring showing win % (SVG stroke-dasharray) with the percentage centered inside.
+- Beneath the score: a **segmented bar** split into `total` cells — win cells filled solid, loss cells outlined — giving a visual, game-by-game read of the season instead of a single averaged bar. Falls back to a slim "No games logged yet" state when `total === 0`.
+- Small footer row: `{total} games played · {winPct}% win rate · Next game …` (only include "Next game" line if we can pull it cheaply from `calendar_events` — otherwise omit; deciding while implementing based on cost).
 
-### 6. Metadata + favicon
-- Generate a Rally Sport favicon from the existing logo, drop into `public/favicon.png`, remove `public/favicon.ico`, and update `index.html`.
-- Add `apple-touch-icon` link.
+Empty state (0 games): keep the hero, show a muted "Log your first result" CTA that routes to `/season` for staff, or plain copy for players.
 
-### 7. Post-export checklist file
-- Write `IOS_RELEASE.md` at project root with the exact commands and App Store Connect steps (Capacitor add/sync, icon generation, Xcode signing, TestFlight, privacy questionnaire answers matching what we collect).
+## Your Team card (bottom)
 
-## Out of scope (can only be done outside Lovable)
-- Running `npx cap add ios`, `npx cap sync`, opening Xcode, signing, uploading to TestFlight.
-- Apple Developer account, App Store Connect listing, screenshots.
-- Configuring a real sender email domain to re-enable email verification (separate task if you want it).
+Same component, just repositioned as the last block on the page. Still collapsible, still coach/manager only. No behavior change.
 
-## Question before I start
-- **Support email address**: what real inbox should I put on the Support page and in the Privacy policy? (If you don't have one yet, I'll use `support@rallysport.app` as a clearly-labeled placeholder and flag it in `IOS_RELEASE.md` to change before submitting.)
+## Out of scope
+- Not touching Tasks card, Log Result card, Morale graph, or Active Feedback list.
+- Not changing routes, RLS, or data models.
+- Not redesigning the Season Record page itself.
