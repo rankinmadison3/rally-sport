@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { TrendingUp, FileText, Users, Trophy, Copy, Check, Pencil, ChevronDown, ChevronUp, ClipboardCheck, ChevronRight, AlertCircle, X as XIcon } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { TrendingUp, FileText, Users, Trophy, Copy, Check, Pencil, ChevronDown, ChevronUp, ClipboardCheck, ChevronRight, AlertCircle, X as XIcon, Sparkles } from "lucide-react";
+import { format, parseISO, startOfDay } from "date-fns";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
