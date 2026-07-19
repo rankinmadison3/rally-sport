@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { Send, Loader2, Sparkles, Users, TrendingUp, CheckCircle2 } from "lucide-react";
+import { Send, Loader2, Sparkles, Users, TrendingUp, CheckCircle2, Heart } from "lucide-react";
+import { HeroCard } from "@/components/ui/hero-card";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
