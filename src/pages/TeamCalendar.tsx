@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Trophy, XCircle, Clock, MapPin, ChevronLeft, ChevronRight, Plus, Download, Pencil, Calendar as CalendarIcon, Users, Dumbbell } from "lucide-react";
+import { Trophy, XCircle, Clock, MapPin, ChevronLeft, ChevronRight, Plus, Download, Pencil, Calendar as CalendarIcon, Users, Dumbbell, ClipboardCheck, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -7,6 +7,15 @@ import { format, startOfMonth, endOfMonth, getDay, getDaysInMonth, addMonths, su
 import { Button } from "@/components/ui/button";
 import EventDialog, { EventFormValue } from "@/components/calendar/EventDialog";
 import { downloadIcs } from "@/lib/icsExport";
+
+interface MyTask {
+  id: string;
+  text: string;
+  category: string | null;
+  due_date: string;
+  done: boolean;
+}
+
 
 interface CalendarEvent {
   id: string;
@@ -20,9 +29,10 @@ interface CalendarEvent {
 }
 
 const TeamCalendar = () => {
-  const { role, teamId } = useAuth();
+  const { user, role, teamId } = useAuth();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [myTasks, setMyTasks] = useState<MyTask[]>([]);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
@@ -51,10 +61,25 @@ const TeamCalendar = () => {
     setLoading(false);
   }, [teamId, currentMonth]);
 
+  const fetchMyTasks = useCallback(async () => {
+    if (!user) return;
+    const start = format(startOfMonth(currentMonth), "yyyy-MM-dd");
+    const end = format(endOfMonth(currentMonth), "yyyy-MM-dd");
+    const { data } = await supabase
+      .from("action_steps")
+      .select("id, text, category, due_date, done")
+      .eq("user_id", user.id)
+      .not("due_date", "is", null)
+      .gte("due_date", start)
+      .lte("due_date", end);
+    setMyTasks((data as MyTask[]) || []);
+  }, [user, currentMonth]);
+
   useEffect(() => {
     setLoading(true);
     fetchEvents();
-  }, [fetchEvents]);
+    fetchMyTasks();
+  }, [fetchEvents, fetchMyTasks]);
 
   // Realtime sync — every team member sees changes immediately
   useEffect(() => {
@@ -89,7 +114,13 @@ const TeamCalendar = () => {
     return events.filter((e) => e.event_date === dateStr);
   };
 
+  const getTasksForDay = (day: number) => {
+    const dateStr = format(new Date(year, month, day), "yyyy-MM-dd");
+    return myTasks.filter((t) => t.due_date === dateStr);
+  };
+
   const dayEvents = selectedDay ? getEventsForDay(selectedDay) : [];
+  const dayTasks = selectedDay ? getTasksForDay(selectedDay) : [];
 
   const openCreate = () => {
     const dateStr = selectedDay
@@ -186,6 +217,7 @@ const TeamCalendar = () => {
           {Array.from({ length: daysInMonth }).map((_, i) => {
             const day = i + 1;
             const dayEvts = getEventsForDay(day);
+            const dayTsks = getTasksForDay(day);
             const isSelected = selectedDay === day;
             const hasGame = dayEvts.some((e) => e.event_type === "game");
             const hasAbsence = dayEvts.some((e) => e.event_type === "absence");
@@ -193,6 +225,7 @@ const TeamCalendar = () => {
             const hasOther = dayEvts.some((e) => !["game", "absence", "practice"].includes(e.event_type));
             const hasWin = dayEvts.some((e) => e.game_result === "win");
             const hasLoss = dayEvts.some((e) => e.game_result === "loss");
+            const hasTask = dayTsks.length > 0;
             return (
               <button
                 key={day}
@@ -202,7 +235,7 @@ const TeamCalendar = () => {
                 }`}
               >
                 {day}
-                {dayEvts.length > 0 && (
+                {(dayEvts.length > 0 || hasTask) && (
                   <div className="absolute bottom-1 flex gap-0.5">
                     {hasGame && !hasWin && !hasLoss && <Trophy className="w-4 h-4 text-primary" />}
                     {hasWin && <div className="w-3 h-3 rounded-full bg-success" />}
@@ -210,6 +243,7 @@ const TeamCalendar = () => {
                     {hasAbsence && <XCircle className="w-4 h-4 text-destructive" />}
                     {hasPractice && !hasGame && <Dumbbell className="w-4 h-4 text-success" />}
                     {hasOther && !hasGame && !hasPractice && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
+                    {hasTask && <ClipboardCheck className="w-4 h-4 text-accent-foreground" />}
                   </div>
                 )}
               </button>
@@ -224,6 +258,7 @@ const TeamCalendar = () => {
           <div className="flex items-center gap-1 text-[10px] text-muted-foreground"><div className="w-2 h-2 rounded-full bg-destructive" /> Loss</div>
           <div className="flex items-center gap-1 text-[10px] text-muted-foreground"><XCircle className="w-3 h-3 text-destructive" /> Absence</div>
           <div className="flex items-center gap-1 text-[10px] text-muted-foreground"><div className="w-2 h-2 rounded-full bg-primary" /> Other</div>
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground"><ClipboardCheck className="w-3 h-3 text-accent-foreground" /> My tasks</div>
         </div>
       </div>
 
@@ -316,8 +351,35 @@ const TeamCalendar = () => {
                 )}
               </div>
             ))
-          ) : (
+          ) : dayTasks.length === 0 ? (
             <p className="text-sm text-muted-foreground">No events scheduled.</p>
+          ) : null}
+
+          {dayTasks.length > 0 && (
+            <div className="space-y-2 pt-1">
+              <p className="text-[11px] uppercase tracking-wider font-medium text-muted-foreground">My tasks</p>
+              {dayTasks.map((t) => (
+                <div key={t.id} className="p-3 rounded-lg bg-accent/40 flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-background flex items-center justify-center shrink-0">
+                    {t.done ? (
+                      <CheckCircle2 className="w-4 h-4 text-success" />
+                    ) : (
+                      <ClipboardCheck className="w-4 h-4 text-accent-foreground" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium ${t.done ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                      {t.text}
+                    </p>
+                    {t.category && (
+                      <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-background text-muted-foreground mt-1 inline-block">
+                        {t.category}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}
