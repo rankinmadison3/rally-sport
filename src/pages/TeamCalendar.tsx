@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import EventDialog, { EventFormValue } from "@/components/calendar/EventDialog";
 import { downloadIcs } from "@/lib/icsExport";
 import { HeroCard } from "@/components/ui/hero-card";
-import { motion, AnimatePresence } from "framer-motion";
 
 interface MyTask {
   id: string;
