@@ -171,6 +171,7 @@ const Profile = () => {
         .single();
       if (error) throw error;
       setProfile(data as ProfileRow);
+      notifyProfileUpdated();
       setEditing(false);
       toast.success("Profile saved");
     } catch (err: any) {
