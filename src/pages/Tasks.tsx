@@ -530,7 +530,7 @@ const Tasks = () => {
               ? players.length === 0
                 ? "No players have joined yet. Prebuild your season plan as templates — they'll auto-assign to every player who joins."
                 : "Create a task and assign it to a player to get started."
-              : "Your coach hasn't assigned you any tasks yet."}
+              : "No tasks yet. Tap New to add a personal task, or wait for your coach to assign one."}
           </p>
         </div>
       )}
