@@ -290,30 +290,52 @@ const TeamCalendar = () => {
         </div>
       </HeroCard>
 
-      <div className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)]">
-        <div className="flex items-center justify-between mb-4">
-          <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+      <div className="bg-card rounded-2xl p-4 shadow-[var(--card-shadow)] border border-border/50 overflow-hidden relative">
+        {/* subtle top gradient bar */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-primary/70 to-primary-foreground/30" />
+
+        <div className="flex items-center justify-between mb-5">
+          <button
+            onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+            className="p-2 rounded-xl hover:bg-muted active:scale-95 transition-all"
+            aria-label="Previous month"
+          >
             <ChevronLeft className="w-5 h-5 text-muted-foreground" />
           </button>
-          <h2 className="font-display font-semibold text-card-foreground">{format(currentMonth, "MMMM yyyy")}</h2>
-          <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+          <div className="text-center">
+            <h2 className="font-display font-bold text-card-foreground text-lg tracking-tight">
+              {format(currentMonth, "MMMM")}
+            </h2>
+            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-widest">
+              {format(currentMonth, "yyyy")}
+            </span>
+          </div>
+          <button
+            onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+            className="p-2 rounded-xl hover:bg-muted active:scale-95 transition-all"
+            aria-label="Next month"
+          >
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
           </button>
         </div>
 
         <div className="grid grid-cols-7 gap-1 mb-2">
           {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
-            <div key={i} className="text-center text-[10px] font-medium text-muted-foreground py-1">{d}</div>
+            <div key={i} className="text-center text-[10px] font-bold text-muted-foreground/70 py-1 uppercase tracking-wider">
+              {d}
+            </div>
           ))}
         </div>
 
-        <div className="grid grid-cols-7 gap-1">
+        <div className="grid grid-cols-7 gap-1.5">
           {Array.from({ length: startDay }).map((_, i) => <div key={`e-${i}`} />)}
           {Array.from({ length: daysInMonth }).map((_, i) => {
             const day = i + 1;
+            const dateObj = new Date(year, month, day);
             const dayEvts = getEventsForDay(day);
             const dayTsks = getTasksForDay(day);
             const isSelected = selectedDay === day;
+            const today = isDateToday(dateObj);
             const hasGame = dayEvts.some((e) => e.event_type === "game");
             const hasAbsence = dayEvts.some((e) => e.event_type === "absence");
             const hasPractice = dayEvts.some((e) => e.event_type === "practice");
@@ -325,20 +347,29 @@ const TeamCalendar = () => {
               <button
                 key={day}
                 onClick={() => setSelectedDay(day)}
-                className={`relative aspect-square flex flex-col items-center justify-center rounded-lg text-sm transition-all ${
-                  isSelected ? "bg-muted text-card-foreground font-bold" : "hover:bg-muted text-card-foreground"
+                className={`relative aspect-square flex flex-col items-center justify-center rounded-xl text-sm transition-all duration-200 border ${
+                  isSelected
+                    ? "bg-muted text-card-foreground font-bold border-primary/40 shadow-[0_0_0_2px_hsl(var(--primary)/0.25)] z-10"
+                    : today
+                    ? "bg-primary/10 text-primary font-bold border-primary/30"
+                    : "hover:bg-muted/80 hover:border-border/80 text-card-foreground border-transparent"
                 }`}
               >
-                {day}
+                <span className={`${today ? "relative" : ""}`}>
+                  {day}
+                  {today && (
+                    <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
+                  )}
+                </span>
                 {(dayEvts.length > 0 || hasTask) && (
-                  <div className="absolute bottom-1 flex gap-0.5">
-                    {hasGame && !hasWin && !hasLoss && <Trophy className="w-4 h-4 text-primary" />}
-                    {hasWin && <div className="w-3 h-3 rounded-full bg-success" />}
-                    {hasLoss && <div className="w-3 h-3 rounded-full bg-destructive" />}
-                    {hasAbsence && <XCircle className="w-4 h-4 text-destructive" />}
-                    {hasPractice && !hasGame && <Dumbbell className="w-4 h-4 text-success" />}
-                    {hasOther && !hasGame && !hasPractice && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
-                    {hasTask && <ClipboardCheck className="w-4 h-4 text-accent-foreground" />}
+                  <div className="absolute bottom-1.5 flex gap-0.5 items-center">
+                    {hasGame && !hasWin && !hasLoss && <Trophy className="w-3.5 h-3.5 text-primary" />}
+                    {hasWin && <div className="w-2.5 h-2.5 rounded-full bg-success shadow-sm" />}
+                    {hasLoss && <div className="w-2.5 h-2.5 rounded-full bg-destructive shadow-sm" />}
+                    {hasAbsence && <XCircle className="w-3.5 h-3.5 text-destructive" />}
+                    {hasPractice && !hasGame && <Dumbbell className="w-3.5 h-3.5 text-success" />}
+                    {hasOther && !hasGame && !hasPractice && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    {hasTask && <ClipboardCheck className="w-3.5 h-3.5 text-accent-foreground" />}
                   </div>
                 )}
               </button>
@@ -346,14 +377,28 @@ const TeamCalendar = () => {
           })}
         </div>
 
-        <div className="flex gap-4 mt-3 pt-3 border-t border-border flex-wrap">
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground"><Trophy className="w-3 h-3 text-primary" /> Game</div>
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground"><div className="w-2 h-2 rounded-full bg-success" /> Win</div>
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground"><Dumbbell className="w-3 h-3 text-success" /> Practice</div>
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground"><div className="w-2 h-2 rounded-full bg-destructive" /> Loss</div>
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground"><XCircle className="w-3 h-3 text-destructive" /> Absence</div>
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground"><div className="w-2 h-2 rounded-full bg-primary" /> Other</div>
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground"><ClipboardCheck className="w-3 h-3 text-accent-foreground" /> My tasks</div>
+        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border/60">
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-primary/10 text-[10px] font-medium text-primary">
+            <Trophy className="w-3 h-3" /> Game
+          </span>
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-success/10 text-[10px] font-medium text-success">
+            <div className="w-2 h-2 rounded-full bg-success" /> Win
+          </span>
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-success/10 text-[10px] font-medium text-success">
+            <Dumbbell className="w-3 h-3" /> Practice
+          </span>
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-destructive/10 text-[10px] font-medium text-destructive">
+            <div className="w-2 h-2 rounded-full bg-destructive" /> Loss
+          </span>
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-destructive/10 text-[10px] font-medium text-destructive">
+            <XCircle className="w-3 h-3" /> Absence
+          </span>
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-muted text-[10px] font-medium text-muted-foreground">
+            <div className="w-2 h-2 rounded-full bg-primary" /> Other
+          </span>
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-accent text-[10px] font-medium text-accent-foreground">
+            <ClipboardCheck className="w-3 h-3" /> My tasks
+          </span>
         </div>
       </div>
 
