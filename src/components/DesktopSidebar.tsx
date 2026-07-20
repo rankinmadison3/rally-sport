@@ -5,11 +5,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import logo from "@/assets/rally-sport-logo.png";
+import { useMyProfile } from "@/hooks/useMyProfile";
 
 const DesktopSidebar = () => {
   const { user, role } = useAuth();
   const navigate = useNavigate();
-  const initial = user?.email?.charAt(0).toUpperCase() ?? "?";
+  const { displayName, avatarUrl } = useMyProfile();
+  const initial = (displayName || user?.email || "?").charAt(0).toUpperCase();
   const isStaff = role === "coach" || role === "manager";
   const navItems = desktopNavItems.filter((item) => !item.staffOnly || isStaff);
 
