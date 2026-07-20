@@ -866,7 +866,7 @@ const Tasks = () => {
                 ? "Save Template"
                 : formAssignee === TEMPLATE_SENTINEL
                 ? "Save Template"
-                : "Assign Task"}
+                : isCoachOrManager ? "Assign Task" : "Add Task"}
             </Button>
           </DialogFooter>
         </DialogContent>
