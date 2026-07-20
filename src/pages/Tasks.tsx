@@ -270,7 +270,7 @@ const Tasks = () => {
     } else {
       const { error } = await supabase.from("action_steps").insert({
         team_id: teamId,
-        user_id: formAssignee,
+        user_id: effectiveAssignee,
         assigned_by: user.id,
         text: trimmed,
         notes: notesStr,
@@ -283,7 +283,7 @@ const Tasks = () => {
         toast.error("Failed to create task");
         return;
       }
-      toast.success("Task assigned");
+      toast.success(isCoachOrManager ? "Task assigned" : "Task added");
     }
 
     resetForm();
