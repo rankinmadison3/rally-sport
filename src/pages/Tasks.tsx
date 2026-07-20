@@ -570,6 +570,61 @@ const Tasks = () => {
         </div>
       )}
 
+      {/* Player Progress (coach/manager) */}
+      {isCoachOrManager && playerProgress.length > 0 && (
+        <section className="space-y-3">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+              Player Progress · {playerProgress.length}
+            </h2>
+            <span className="text-xs text-muted-foreground">Coach-assigned tasks only</span>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {playerProgress.map((p) => (
+              <div
+                key={p.user_id}
+                className="rounded-xl border bg-card p-4 flex items-center gap-3"
+              >
+                <div className="relative w-12 h-12 shrink-0">
+                  <svg viewBox="0 0 40 40" className="w-12 h-12 -rotate-90">
+                    <circle cx="20" cy="20" r="16" fill="none" stroke="hsl(var(--muted))" strokeWidth="4" />
+                    <circle
+                      cx="20"
+                      cy="20"
+                      r="16"
+                      fill="none"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                      strokeDasharray={2 * Math.PI * 16}
+                      strokeDashoffset={2 * Math.PI * 16 * (1 - p.pct / 100)}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold">
+                    {p.pct}%
+                  </div>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium truncate">{p.name}</div>
+                  <div className="text-xs text-muted-foreground flex flex-wrap gap-x-2">
+                    <span>{p.done} done</span>
+                    <span>·</span>
+                    <span>{p.open} open</span>
+                    {p.overdue > 0 && (
+                      <>
+                        <span>·</span>
+                        <span className="text-destructive font-medium">{p.overdue} overdue</span>
+                      </>
+                    )}
+                    {p.total === 0 && <span className="italic">No tasks yet</span>}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Preseason Templates (coach/manager) */}
       {isCoachOrManager && templates.length > 0 && (
         <section className="space-y-3">
