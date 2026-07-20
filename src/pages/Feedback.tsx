@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Send, Loader2, Plus, FileText, Calendar as CalendarIcon, Repeat, Users,
-  ChevronRight, Trash2, Pencil, ChevronDown, CheckCircle2, Clock,
+  ChevronRight, Trash2, Pencil, ChevronDown, CheckCircle2, Clock, Inbox, TrendingUp, MessageSquare,
 } from "lucide-react";
+import { HeroCard, StatTile } from "@/components/ui/hero-card";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -232,23 +233,58 @@ const Feedback = () => {
 
   // -------- COACH / MANAGER VIEW --------
   if (isCoachOrManager) {
+    const totalResponses = broadcasts.reduce((s, g) => s + g.submitted, 0);
+    const totalOutstanding = broadcasts.reduce((s, g) => s + (g.total - g.submitted), 0);
+    const totalSent = broadcasts.reduce((s, g) => s + g.total, 0);
+    const responseRate = totalSent === 0 ? 0 : Math.round((totalResponses / totalSent) * 100);
+
     return (
-      <div className="p-4 space-y-5 max-w-3xl mx-auto">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              {role === "coach" ? "Coach's View" : "Manager's View"}
-            </p>
-            <h1 className="text-2xl font-bold font-display text-foreground">Feedback</h1>
-            <p className="text-sm text-muted-foreground mt-1">Create, send, and track team feedback.</p>
-          </div>
-          <Button
-            onClick={() => { setBuilderTemplateId(null); setBuilderEditId(null); setBuilderOpen(true); }}
-            size="sm"
-          >
-            <Plus className="w-4 h-4" /> New feedback
-          </Button>
+      <div className="p-4 space-y-5 max-w-5xl mx-auto">
+        <HeroCard
+          eyebrow={role === "coach" ? "Coach's Command · Feedback" : "Manager's Command · Feedback"}
+          title="Feedback"
+          subtitle="Build surveys, broadcast them to the team, and watch responses roll in."
+          icon={<MessageSquare className="w-5 h-5" />}
+          right={
+            <button
+              onClick={() => { setBuilderTemplateId(null); setBuilderEditId(null); setBuilderOpen(true); }}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-primary-foreground text-primary px-3.5 py-2 text-sm font-semibold shadow-sm hover:opacity-90 transition-opacity"
+            >
+              <Plus className="w-4 h-4" /> New form
+            </button>
+          }
+        />
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <StatTile
+            icon={<Send className="w-4 h-4" />}
+            label="Active"
+            value={broadcasts.length}
+            hint={`${totalSent} sent`}
+          />
+          <StatTile
+            icon={<CheckCircle2 className="w-4 h-4" />}
+            label="Responses"
+            value={totalResponses}
+            hint={`${totalOutstanding} pending`}
+            accent="bg-emerald-500/15 text-emerald-600"
+          />
+          <StatTile
+            icon={<TrendingUp className="w-4 h-4" />}
+            label="Response rate"
+            value={`${responseRate}%`}
+            hint="across broadcasts"
+            accent="bg-amber-500/15 text-amber-600"
+          />
+          <StatTile
+            icon={<FileText className="w-4 h-4" />}
+            label="Forms"
+            value={myForms.length}
+            hint={`${templates.length} templates`}
+            accent="bg-blue-500/15 text-blue-600"
+          />
         </div>
+
 
         <Tabs defaultValue="active" className="w-full">
           <TabsList className="grid grid-cols-3 w-full">
@@ -269,34 +305,47 @@ const Feedback = () => {
                 const pct = g.total > 0 ? Math.round((g.submitted / g.total) * 100) : 0;
                 const expanded = expandedKey === g.key;
                 return (
-                  <div key={g.key} className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] space-y-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-display font-semibold text-card-foreground truncate">
-                          {g.form?.name ?? "Feedback"}
-                        </p>
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-muted-foreground">
-                          <span className="inline-flex items-center gap-1">
-                            <Clock className="w-3 h-3" />Sent {new Date(g.broadcast_at).toLocaleDateString()}
-                          </span>
-                          {g.due_date && (
+                  <div key={g.key} className="bg-card rounded-2xl p-5 shadow-[var(--card-shadow)] border border-border/60 space-y-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        {/* Progress ring */}
+                        <div className="relative w-14 h-14 shrink-0">
+                          <svg viewBox="0 0 40 40" className="w-14 h-14 -rotate-90">
+                            <circle cx="20" cy="20" r="16" fill="none" stroke="hsl(var(--muted))" strokeWidth="4" />
+                            <circle
+                              cx="20" cy="20" r="16" fill="none"
+                              stroke="hsl(var(--primary))" strokeWidth="4" strokeLinecap="round"
+                              strokeDasharray={2 * Math.PI * 16}
+                              strokeDashoffset={2 * Math.PI * 16 * (1 - pct / 100)}
+                            />
+                          </svg>
+                          <div className="absolute inset-0 flex items-center justify-center text-[11px] font-bold text-foreground">
+                            {pct}%
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-display font-semibold text-card-foreground truncate">
+                            {g.form?.name ?? "Feedback"}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-muted-foreground">
                             <span className="inline-flex items-center gap-1">
-                              <CalendarIcon className="w-3 h-3" />Due {new Date(g.due_date).toLocaleDateString()}
+                              <Clock className="w-3 h-3" />{new Date(g.broadcast_at).toLocaleDateString()}
                             </span>
-                          )}
-                          {g.recurrence !== "none" && (
-                            <span className="inline-flex items-center gap-1"><Repeat className="w-3 h-3" />{g.recurrence}</span>
-                          )}
-                          <span className="inline-flex items-center gap-1">
-                            <Users className="w-3 h-3" />{g.submitted}/{g.total} submitted
-                          </span>
+                            {g.due_date && (
+                              <span className="inline-flex items-center gap-1">
+                                <CalendarIcon className="w-3 h-3" />Due {new Date(g.due_date).toLocaleDateString()}
+                              </span>
+                            )}
+                            {g.recurrence !== "none" && (
+                              <span className="inline-flex items-center gap-1 capitalize"><Repeat className="w-3 h-3" />{g.recurrence}</span>
+                            )}
+                            <span className="inline-flex items-center gap-1 font-medium text-foreground">
+                              <Users className="w-3 h-3" />{g.submitted}/{g.total}
+                            </span>
+                          </div>
                         </div>
                       </div>
                       <Button variant="ghost" size="sm" onClick={() => closeBroadcast(g)}>Close</Button>
-                    </div>
-
-                    <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-                      <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${pct}%` }} />
                     </div>
 
                     <button
@@ -304,21 +353,21 @@ const Feedback = () => {
                       className="text-xs text-primary font-medium inline-flex items-center gap-1 hover:opacity-80"
                     >
                       <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
-                      {expanded ? "Hide details" : "View details"}
+                      {expanded ? "Hide players" : `View ${g.total} player${g.total === 1 ? "" : "s"}`}
                     </button>
 
                     {expanded && (
-                      <div className="border-t border-border pt-3 space-y-2">
+                      <div className="border-t border-border/60 pt-3 grid gap-1.5 sm:grid-cols-2">
                         {g.assignments.map((a) => (
-                          <div key={a.id} className="flex items-center justify-between text-sm">
+                          <div key={a.id} className="flex items-center justify-between text-sm px-2 py-1.5 rounded-lg bg-muted/50">
                             <span className="text-card-foreground truncate">{a.playerName}</span>
                             {a.status === "submitted" ? (
-                              <span className="inline-flex items-center gap-1 text-xs text-success font-medium">
+                              <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium shrink-0 ml-2">
                                 <CheckCircle2 className="w-3.5 h-3.5" />
-                                {a.submitted_at ? new Date(a.submitted_at).toLocaleDateString() : "Submitted"}
+                                {a.submitted_at ? new Date(a.submitted_at).toLocaleDateString() : "Done"}
                               </span>
                             ) : (
-                              <span className="text-xs text-muted-foreground">Pending</span>
+                              <span className="text-xs text-muted-foreground shrink-0 ml-2">Pending</span>
                             )}
                           </div>
                         ))}
@@ -413,22 +462,30 @@ const Feedback = () => {
   const submitted = playerAssignments.filter((a) => a.status === "submitted");
 
   return (
-    <div className="p-4 space-y-6 max-w-3xl mx-auto">
-      <div>
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Player's View</p>
-        <h1 className="text-2xl font-bold font-display text-foreground">Feedback</h1>
-        <p className="text-sm text-muted-foreground mt-1">Feedback your coach has assigned to you.</p>
+    <div className="p-4 space-y-5 max-w-3xl mx-auto">
+      <HeroCard
+        eyebrow="Your Feedback"
+        title={pending.length > 0 ? `${pending.length} awaiting you` : "You're all caught up"}
+        subtitle={pending.length > 0
+          ? "Your coach wants to hear from you. Tap any form below to respond."
+          : "No feedback requests right now. Check back later."}
+        icon={<Inbox className="w-5 h-5" />}
+      />
+
+      <div className="grid grid-cols-2 gap-3">
+        <StatTile icon={<Clock className="w-4 h-4" />} label="Pending" value={pending.length} accent="bg-amber-500/15 text-amber-600" />
+        <StatTile icon={<CheckCircle2 className="w-4 h-4" />} label="Submitted" value={submitted.length} accent="bg-emerald-500/15 text-emerald-600" />
       </div>
 
       {/* Pending */}
       <div className="space-y-3">
-        <h2 className="font-display font-semibold text-foreground flex items-center gap-2">
-          <FileText className="w-4 h-4 text-primary" /> Pending Feedback
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+          <FileText className="w-3.5 h-3.5" /> Pending
         </h2>
         {loading ? (
           <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
         ) : pending.length === 0 ? (
-          <p className="text-sm text-muted-foreground bg-card rounded-xl p-4 shadow-[var(--card-shadow)]">
+          <p className="text-sm text-muted-foreground bg-card rounded-2xl p-6 text-center shadow-[var(--card-shadow)] border border-border/60">
             No feedback requests right now.
           </p>
         ) : (
@@ -436,15 +493,19 @@ const Feedback = () => {
             <button
               key={a.id}
               onClick={() => navigate(`/feedback/assignment/${a.id}`)}
-              className="w-full bg-card rounded-xl p-4 shadow-[var(--card-shadow)] flex items-center gap-3 hover:bg-accent/50 transition-colors text-left"
+              className="w-full bg-card rounded-2xl p-4 shadow-[var(--card-shadow)] border border-border/60 flex items-center gap-3 hover:border-primary/40 hover:-translate-y-0.5 transition-all text-left"
             >
-              <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center shrink-0">
-                <FileText className="w-5 h-5 text-accent-foreground" />
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
+                <FileText className="w-5 h-5 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm text-card-foreground truncate">{a.form?.name ?? "Feedback"}</p>
+                <p className="font-semibold text-sm text-card-foreground truncate">{a.form?.name ?? "Feedback"}</p>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                  {a.due_date && <span>Due {new Date(a.due_date).toLocaleDateString()}</span>}
+                  {a.due_date ? (
+                    <span className="inline-flex items-center gap-1"><CalendarIcon className="w-3 h-3" />Due {new Date(a.due_date).toLocaleDateString()}</span>
+                  ) : (
+                    <span>No due date</span>
+                  )}
                 </div>
               </div>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
@@ -453,17 +514,18 @@ const Feedback = () => {
         )}
       </div>
 
+
       {/* Submitted */}
       {submitted.length > 0 && (
         <div className="space-y-3">
-          <h2 className="font-display font-semibold text-foreground">Submitted</h2>
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Submitted</h2>
           {submitted.map((a) => (
             <div
               key={a.id}
-              className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] flex items-center gap-3 opacity-80"
+              className="bg-card/70 rounded-2xl p-4 shadow-[var(--card-shadow)] border border-border/60 flex items-center gap-3"
             >
-              <div className="w-10 h-10 rounded-lg bg-success/15 flex items-center justify-center shrink-0">
-                <CheckCircle2 className="w-5 h-5 text-success" />
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm text-card-foreground truncate">{a.form?.name ?? "Feedback"}</p>
