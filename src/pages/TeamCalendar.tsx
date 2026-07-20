@@ -203,20 +203,20 @@ const TeamCalendar = () => {
     <CalendarIcon className="w-5 h-5" />;
 
   return (
-    <div className="p-4 space-y-4 pb-8">
+    <div className="p-4 space-y-5 pb-8">
       <div className="flex items-center justify-end gap-2">
         <Button
           size="sm"
           variant="outline"
           onClick={handleExport}
           disabled={exporting}
-          className="gap-1.5"
+          className="gap-1.5 rounded-full border-primary/20 bg-card/80 backdrop-blur-sm"
         >
           <Download className="w-4 h-4" />
           <span className="hidden sm:inline">Export .ics</span>
         </Button>
         {canEdit && (
-          <Button size="sm" onClick={openCreate} className="gap-1.5">
+          <Button size="sm" onClick={openCreate} className="gap-1.5 rounded-full shadow-lg shadow-primary/25">
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">New Event</span>
           </Button>
@@ -224,7 +224,7 @@ const TeamCalendar = () => {
       </div>
 
       <HeroCard
-        eyebrow="Team"
+        eyebrow="Team Schedule"
         title="Calendar"
         subtitle={
           upcoming
@@ -240,31 +240,48 @@ const TeamCalendar = () => {
         icon={<CalendarIcon className="w-5 h-5" />}
         right={
           upcoming && (
-            <div className="w-14 h-14 rounded-2xl bg-primary-foreground/15 backdrop-blur-sm flex flex-col items-center justify-center">
-              {upcomingIcon}
-              <span className="text-[10px] uppercase tracking-wider text-primary-foreground/80 mt-0.5">
-                {format(new Date(upcoming.event_date + "T00:00:00"), "MMM d")}
-              </span>
+            <div className="relative">
+              <div className="absolute inset-0 rounded-2xl bg-primary-foreground/20 blur-md animate-pulse" />
+              <div className="relative w-16 h-16 rounded-2xl bg-primary-foreground/15 backdrop-blur-sm border border-primary-foreground/20 flex flex-col items-center justify-center shadow-xl">
+                {upcomingIcon}
+                <span className="text-[10px] uppercase tracking-wider text-primary-foreground/90 mt-0.5 font-semibold">
+                  {format(new Date(upcoming.event_date + "T00:00:00"), "MMM d")}
+                </span>
+              </div>
             </div>
           )
         }
       >
-        {/* 14-day density strip */}
-        <div className="flex items-end justify-between gap-1">
+        {/* 14-day density strip as activity bars */}
+        <div className="flex items-end justify-between gap-1 pt-1">
           {stripDays.map((s, i) => {
             const anything = s.hasGame || s.hasPractice || s.hasOther || s.hasTask;
+            const intensity = [s.hasGame, s.hasPractice, s.hasOther, s.hasTask].filter(Boolean).length;
+            const isTodayStrip = isDateToday(s.date);
             return (
               <div key={i} className="flex flex-col items-center flex-1 min-w-0">
-                <div className="h-6 flex flex-col-reverse items-center gap-0.5 justify-end">
-                  {s.hasGame && <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />}
-                  {s.hasPractice && <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground/70" />}
-                  {s.hasTask && <span className="w-1.5 h-1.5 rounded-full border border-primary-foreground/80" />}
-                  {s.hasOther && !s.hasGame && !s.hasPractice && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary-foreground/50" />
+                <div className="h-10 flex items-end gap-0.5">
+                  {s.hasGame && (
+                    <div className="w-1.5 rounded-t-full bg-primary-foreground h-6 shadow-[0_0_8px_rgba(255,255,255,0.35)]" />
                   )}
-                  {!anything && <span className="w-1 h-1 rounded-full bg-primary-foreground/20" />}
+                  {s.hasPractice && (
+                    <div className="w-1.5 rounded-t-full bg-primary-foreground/70 h-4" />
+                  )}
+                  {s.hasOther && (
+                    <div className="w-1.5 rounded-t-full bg-primary-foreground/50 h-3" />
+                  )}
+                  {s.hasTask && (
+                    <div className="w-1 rounded-t-full border border-primary-foreground/80 h-2.5" />
+                  )}
+                  {!anything && <div className="w-1 rounded-t-full bg-primary-foreground/20 h-1.5" />}
                 </div>
-                <span className="text-[9px] font-medium text-primary-foreground/70 mt-1">
+                <span
+                  className={`text-[9px] font-semibold mt-1.5 px-1.5 py-0.5 rounded-full ${
+                    isTodayStrip
+                      ? "bg-primary-foreground text-primary"
+                      : "text-primary-foreground/70"
+                  }`}
+                >
                   {format(s.date, "d")}
                 </span>
               </div>
