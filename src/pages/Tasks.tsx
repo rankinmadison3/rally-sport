@@ -154,7 +154,12 @@ const Tasks = () => {
     setFormNotes("");
     setFormCategory("Technical");
     setFormDueDate(undefined);
-    setFormAssignee(players.length === 0 ? TEMPLATE_SENTINEL : "");
+    if (isCoachOrManager) {
+      setFormAssignee(players.length === 0 ? TEMPLATE_SENTINEL : "");
+    } else {
+      // Players can only assign to themselves
+      setFormAssignee(user?.id ?? "");
+    }
     setEditingTask(null);
     setEditingTemplate(null);
   };
@@ -162,7 +167,11 @@ const Tasks = () => {
   // When opening the dialog, default to template mode if there's no roster yet
   const openCreateDialog = () => {
     resetForm();
-    setFormAssignee(players.length === 0 ? TEMPLATE_SENTINEL : "");
+    if (isCoachOrManager) {
+      setFormAssignee(players.length === 0 ? TEMPLATE_SENTINEL : "");
+    } else {
+      setFormAssignee(user?.id ?? "");
+    }
     setDialogOpen(true);
   };
 
@@ -195,7 +204,9 @@ const Tasks = () => {
       toast.error("Task title is required");
       return;
     }
-    if (!formAssignee) {
+    // Players always assign to themselves
+    const effectiveAssignee = isCoachOrManager ? formAssignee : user.id;
+    if (!effectiveAssignee) {
       toast.error("Please choose who this task is for");
       return;
     }
@@ -259,7 +270,7 @@ const Tasks = () => {
     } else {
       const { error } = await supabase.from("action_steps").insert({
         team_id: teamId,
-        user_id: formAssignee,
+        user_id: effectiveAssignee,
         assigned_by: user.id,
         text: trimmed,
         notes: notesStr,
@@ -272,7 +283,7 @@ const Tasks = () => {
         toast.error("Failed to create task");
         return;
       }
-      toast.success("Task assigned");
+      toast.success(isCoachOrManager ? "Task assigned" : "Task added");
     }
 
     resetForm();
@@ -420,11 +431,9 @@ const Tasks = () => {
         >
           <ArrowLeft className="w-4 h-4 text-muted-foreground" />
         </button>
-        {isCoachOrManager && (
-          <Button onClick={openCreateDialog} size="sm" className="gap-1.5">
-            <Plus className="w-4 h-4" /> New
-          </Button>
-        )}
+        <Button onClick={openCreateDialog} size="sm" className="gap-1.5">
+          <Plus className="w-4 h-4" /> New
+        </Button>
       </div>
 
       {/* Hero — Progress board */}
@@ -521,7 +530,7 @@ const Tasks = () => {
               ? players.length === 0
                 ? "No players have joined yet. Prebuild your season plan as templates — they'll auto-assign to every player who joins."
                 : "Create a task and assign it to a player to get started."
-              : "Your coach hasn't assigned you any tasks yet."}
+              : "No tasks yet. Tap New to add a personal task, or wait for your coach to assign one."}
           </p>
         </div>
       )}
@@ -625,7 +634,7 @@ const Tasks = () => {
                       <p className="font-medium text-sm text-card-foreground leading-snug">
                         {t.text}
                       </p>
-                      {isCoachOrManager && (
+                      {(isCoachOrManager || (t.assigned_by === user?.id && t.user_id === user?.id)) && (
                         <div className="flex items-center gap-1 shrink-0">
                           <button
                             onClick={() => openEditTask(t)}
@@ -651,6 +660,11 @@ const Tasks = () => {
                       <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full", CATEGORY_STYLES[t.category])}>
                         {t.category}
                       </span>
+                      {!isCoachOrManager && t.assigned_by === user?.id && t.user_id === user?.id && (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                          Personal
+                        </span>
+                      )}
                       {due && (
                         <span
                           className={cn(
@@ -704,7 +718,7 @@ const Tasks = () => {
                       <p className="font-medium text-sm text-card-foreground line-through leading-snug">
                         {t.text}
                       </p>
-                      {isCoachOrManager && (
+                      {(isCoachOrManager || (t.assigned_by === user?.id && t.user_id === user?.id)) && (
                         <div className="flex items-center gap-1 shrink-0">
                           <button
                             onClick={() => openEditTask(t)}
@@ -759,29 +773,35 @@ const Tasks = () => {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="task-assignee">Assign to</Label>
-              <Select value={formAssignee} onValueChange={setFormAssignee} disabled={!!editingTemplate}>
-                <SelectTrigger id="task-assignee">
-                  <SelectValue placeholder="Select an assignee" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={TEMPLATE_SENTINEL}>
-                    ✨ All future players (template)
-                  </SelectItem>
-                  {players.map((p) => (
-                    <SelectItem key={p.user_id} value={p.user_id}>
-                      {p.display_name}
+            {isCoachOrManager ? (
+              <div className="space-y-2">
+                <Label htmlFor="task-assignee">Assign to</Label>
+                <Select value={formAssignee} onValueChange={setFormAssignee} disabled={!!editingTemplate}>
+                  <SelectTrigger id="task-assignee">
+                    <SelectValue placeholder="Select an assignee" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={TEMPLATE_SENTINEL}>
+                      ✨ All future players (template)
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {formAssignee === TEMPLATE_SENTINEL && (
-                <p className="text-[11px] text-muted-foreground">
-                  Saved as a preseason template. Auto-assigns to every player who joins your team.
-                </p>
-              )}
-            </div>
+                    {players.map((p) => (
+                      <SelectItem key={p.user_id} value={p.user_id}>
+                        {p.display_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {formAssignee === TEMPLATE_SENTINEL && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Saved as a preseason template. Auto-assigns to every player who joins your team.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p className="text-[11px] text-muted-foreground">
+                This task is for you. Players can only create personal tasks for themselves.
+              </p>
+            )}
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
@@ -851,7 +871,7 @@ const Tasks = () => {
                 ? "Save Template"
                 : formAssignee === TEMPLATE_SENTINEL
                 ? "Save Template"
-                : "Assign Task"}
+                : isCoachOrManager ? "Assign Task" : "Add Task"}
             </Button>
           </DialogFooter>
         </DialogContent>
