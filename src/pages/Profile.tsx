@@ -280,6 +280,7 @@ const Profile = () => {
         .single();
       if (error) throw error;
       setProfile(data as ProfileRow);
+      notifyProfileUpdated();
       toast.success("Picture removed");
     } catch (err: any) {
       toast.error(err?.message || "Failed to remove");
