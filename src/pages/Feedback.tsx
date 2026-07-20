@@ -305,34 +305,47 @@ const Feedback = () => {
                 const pct = g.total > 0 ? Math.round((g.submitted / g.total) * 100) : 0;
                 const expanded = expandedKey === g.key;
                 return (
-                  <div key={g.key} className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] space-y-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-display font-semibold text-card-foreground truncate">
-                          {g.form?.name ?? "Feedback"}
-                        </p>
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-muted-foreground">
-                          <span className="inline-flex items-center gap-1">
-                            <Clock className="w-3 h-3" />Sent {new Date(g.broadcast_at).toLocaleDateString()}
-                          </span>
-                          {g.due_date && (
+                  <div key={g.key} className="bg-card rounded-2xl p-5 shadow-[var(--card-shadow)] border border-border/60 space-y-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        {/* Progress ring */}
+                        <div className="relative w-14 h-14 shrink-0">
+                          <svg viewBox="0 0 40 40" className="w-14 h-14 -rotate-90">
+                            <circle cx="20" cy="20" r="16" fill="none" stroke="hsl(var(--muted))" strokeWidth="4" />
+                            <circle
+                              cx="20" cy="20" r="16" fill="none"
+                              stroke="hsl(var(--primary))" strokeWidth="4" strokeLinecap="round"
+                              strokeDasharray={2 * Math.PI * 16}
+                              strokeDashoffset={2 * Math.PI * 16 * (1 - pct / 100)}
+                            />
+                          </svg>
+                          <div className="absolute inset-0 flex items-center justify-center text-[11px] font-bold text-foreground">
+                            {pct}%
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-display font-semibold text-card-foreground truncate">
+                            {g.form?.name ?? "Feedback"}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-muted-foreground">
                             <span className="inline-flex items-center gap-1">
-                              <CalendarIcon className="w-3 h-3" />Due {new Date(g.due_date).toLocaleDateString()}
+                              <Clock className="w-3 h-3" />{new Date(g.broadcast_at).toLocaleDateString()}
                             </span>
-                          )}
-                          {g.recurrence !== "none" && (
-                            <span className="inline-flex items-center gap-1"><Repeat className="w-3 h-3" />{g.recurrence}</span>
-                          )}
-                          <span className="inline-flex items-center gap-1">
-                            <Users className="w-3 h-3" />{g.submitted}/{g.total} submitted
-                          </span>
+                            {g.due_date && (
+                              <span className="inline-flex items-center gap-1">
+                                <CalendarIcon className="w-3 h-3" />Due {new Date(g.due_date).toLocaleDateString()}
+                              </span>
+                            )}
+                            {g.recurrence !== "none" && (
+                              <span className="inline-flex items-center gap-1 capitalize"><Repeat className="w-3 h-3" />{g.recurrence}</span>
+                            )}
+                            <span className="inline-flex items-center gap-1 font-medium text-foreground">
+                              <Users className="w-3 h-3" />{g.submitted}/{g.total}
+                            </span>
+                          </div>
                         </div>
                       </div>
                       <Button variant="ghost" size="sm" onClick={() => closeBroadcast(g)}>Close</Button>
-                    </div>
-
-                    <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-                      <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${pct}%` }} />
                     </div>
 
                     <button
@@ -340,21 +353,21 @@ const Feedback = () => {
                       className="text-xs text-primary font-medium inline-flex items-center gap-1 hover:opacity-80"
                     >
                       <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
-                      {expanded ? "Hide details" : "View details"}
+                      {expanded ? "Hide players" : `View ${g.total} player${g.total === 1 ? "" : "s"}`}
                     </button>
 
                     {expanded && (
-                      <div className="border-t border-border pt-3 space-y-2">
+                      <div className="border-t border-border/60 pt-3 grid gap-1.5 sm:grid-cols-2">
                         {g.assignments.map((a) => (
-                          <div key={a.id} className="flex items-center justify-between text-sm">
+                          <div key={a.id} className="flex items-center justify-between text-sm px-2 py-1.5 rounded-lg bg-muted/50">
                             <span className="text-card-foreground truncate">{a.playerName}</span>
                             {a.status === "submitted" ? (
-                              <span className="inline-flex items-center gap-1 text-xs text-success font-medium">
+                              <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium shrink-0 ml-2">
                                 <CheckCircle2 className="w-3.5 h-3.5" />
-                                {a.submitted_at ? new Date(a.submitted_at).toLocaleDateString() : "Submitted"}
+                                {a.submitted_at ? new Date(a.submitted_at).toLocaleDateString() : "Done"}
                               </span>
                             ) : (
-                              <span className="text-xs text-muted-foreground">Pending</span>
+                              <span className="text-xs text-muted-foreground shrink-0 ml-2">Pending</span>
                             )}
                           </div>
                         ))}
