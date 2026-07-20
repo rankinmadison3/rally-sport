@@ -52,7 +52,7 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
           style={{ willChange: "transform, opacity" }}
         />
         <div
-          className="absolute top-[30%] -right-[15%] w-[60vw] h-[60vw] rounded-full bg-primary/6 blur-[100px] animate-aura-pulse-slow"
+          className="absolute top-[30%] -right-[15%] w-[60vw] h-[60vw] rounded-full bg-primary/[0.06] blur-[100px] animate-aura-pulse-slow"
           style={{ willChange: "transform, opacity", animationDelay: "-3s" }}
         />
         <div
