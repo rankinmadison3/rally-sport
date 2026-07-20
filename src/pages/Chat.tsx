@@ -689,11 +689,5 @@ const Chat = () => {
 
 };
 
-const Header = ({ title }: { title: string }) => (
-  <div>
-    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Messages</p>
-    <h1 className="text-2xl font-bold font-display text-foreground">{title}</h1>
-  </div>
-);
 
 export default Chat;
