@@ -606,52 +606,62 @@ const Chat = () => {
 
   const ThreadPane = (
     <div className="flex flex-col h-full">
-      <div className="p-3 border-b border-border bg-background sticky top-0 z-10">
+      <div className="px-4 py-3 border-b border-border/60 bg-background/80 backdrop-blur sticky top-0 z-10">
         <ThreadHeader />
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-2">
+      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-2">
         {loading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
           </div>
         ) : activeThread.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-12">
-            {activeMode === "group"
-              ? "No team messages yet. Start the conversation."
-              : "No messages with this teammate yet."}
-          </p>
+          <div className="max-w-sm mx-auto text-center py-16 space-y-2">
+            <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+              {activeMode === "group" ? <Users className="w-6 h-6" /> : <Send className="w-6 h-6" />}
+            </div>
+            <p className="text-sm font-semibold text-foreground">
+              {activeMode === "group" ? "Start the huddle" : "Say hello"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {activeMode === "group"
+                ? "Broadcast a message to the whole team — everyone will see it here."
+                : "Your direct messages stay between the two of you."}
+            </p>
+          </div>
         ) : (
           activeThread.map(renderMessage)
         )}
         <div ref={bottomRef} />
       </div>
 
-      <div className="border-t border-border bg-card p-3 sticky bottom-0">
+      <div className="border-t border-border/60 bg-card/70 backdrop-blur p-3 sticky bottom-0">
         <div className="flex gap-2 items-end max-w-3xl mx-auto">
-          <textarea
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
+          <div className="flex-1 relative">
+            <textarea
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              placeholder={
+                activeMode === "group"
+                  ? "Message the team…"
+                  : `Message ${selectedRecipientId ? memberMap.get(selectedRecipientId)?.display_name ?? "" : ""}…`
               }
-            }}
-            placeholder={
-              activeMode === "group"
-                ? "Message the team…"
-                : `Message ${selectedRecipientId ? memberMap.get(selectedRecipientId)?.display_name ?? "" : ""}…`
-            }
-            rows={1}
-            maxLength={1000}
-            disabled={activeMode === "direct" && !selectedRecipientId}
-            className="flex-1 px-3 py-2 text-sm bg-background border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none max-h-32 disabled:opacity-50"
-          />
+              rows={1}
+              maxLength={1000}
+              disabled={activeMode === "direct" && !selectedRecipientId}
+              className="w-full px-4 py-2.5 text-sm bg-background border border-border/80 rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none max-h-32 disabled:opacity-50"
+            />
+          </div>
           <button
             onClick={handleSend}
             disabled={sending || !newMessage.trim() || (activeMode === "direct" && !selectedRecipientId)}
-            className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center shrink-0 disabled:opacity-50 hover:opacity-90 transition-opacity"
+            className="w-11 h-11 rounded-xl bg-primary flex items-center justify-center shrink-0 disabled:opacity-40 hover:opacity-90 transition-opacity shadow-[0_4px_14px_-4px_hsl(var(--primary)/0.5)]"
             aria-label="Send"
           >
             {sending ? (
@@ -668,8 +678,7 @@ const Chat = () => {
   /* ---------- layout ---------- */
   return (
     <div className="md:h-[calc(100vh-3rem)] h-[calc(100vh-9rem)] flex flex-col md:flex-row md:gap-0 -m-4 md:-m-6 md:-my-6">
-      {/* Desktop: split. Mobile: list OR thread. */}
-      <div className={`md:w-72 md:shrink-0 md:border-r md:border-border ${mobileShowList ? "block" : "hidden"} md:block flex-1 md:flex-none min-h-0`}>
+      <div className={`md:w-80 md:shrink-0 ${mobileShowList ? "block" : "hidden"} md:block flex-1 md:flex-none min-h-0`}>
         {ListPane}
       </div>
       <div className={`flex-1 min-h-0 ${mobileShowList ? "hidden" : "block"} md:block`}>
@@ -677,6 +686,7 @@ const Chat = () => {
       </div>
     </div>
   );
+
 };
 
 const Header = ({ title }: { title: string }) => (
