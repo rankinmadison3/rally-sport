@@ -397,8 +397,12 @@ const Chat = () => {
                 isSelected ? "bg-primary/10" : "hover:bg-muted"
               }`}
             >
-              <div className="w-10 h-10 rounded-full bg-muted text-foreground flex items-center justify-center shrink-0 text-sm font-semibold">
-                {m.display_name.charAt(0).toUpperCase()}
+              <div className="w-10 h-10 rounded-full bg-muted text-foreground flex items-center justify-center shrink-0 text-sm font-semibold overflow-hidden">
+                {m.avatar_url ? (
+                  <img src={m.avatar_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  m.display_name.charAt(0).toUpperCase()
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
