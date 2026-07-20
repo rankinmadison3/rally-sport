@@ -392,6 +392,41 @@ const Tasks = () => {
     }).length;
   }, [tasks]);
 
+  // Per-player progress (coach/manager view)
+  const playerProgress = useMemo(() => {
+    if (!isCoachOrManager) return [];
+    const map = new Map<string, { open: number; done: number; overdue: number }>();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    tasks.forEach((t) => {
+      // Only count coach/manager-assigned tasks (exclude players' personal tasks)
+      if (t.assigned_by === t.user_id) return;
+      const cur = map.get(t.user_id) ?? { open: 0, done: 0, overdue: 0 };
+      if (t.done) cur.done++;
+      else {
+        cur.open++;
+        if (t.due_date) {
+          const d = new Date(t.due_date + "T00:00:00");
+          if (d.getTime() < today.getTime()) cur.overdue++;
+        }
+      }
+      map.set(t.user_id, cur);
+    });
+    // Include all roster players (even with 0 tasks) so coach sees full team
+    players.forEach((p) => {
+      if (!map.has(p.user_id)) map.set(p.user_id, { open: 0, done: 0, overdue: 0 });
+    });
+    return Array.from(map.entries())
+      .map(([user_id, s]) => ({
+        user_id,
+        name: profileMap[user_id] ?? "Unknown",
+        ...s,
+        total: s.open + s.done,
+        pct: s.open + s.done === 0 ? 0 : Math.round((s.done / (s.open + s.done)) * 100),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [tasks, players, profileMap, isCoachOrManager]);
+
   // Completion ring
   const total = tasks.length;
   const doneCount = grouped.done.length;
@@ -533,6 +568,61 @@ const Tasks = () => {
               : "No tasks yet. Tap New to add a personal task, or wait for your coach to assign one."}
           </p>
         </div>
+      )}
+
+      {/* Player Progress (coach/manager) */}
+      {isCoachOrManager && playerProgress.length > 0 && (
+        <section className="space-y-3">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+              Player Progress · {playerProgress.length}
+            </h2>
+            <span className="text-xs text-muted-foreground">Coach-assigned tasks only</span>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {playerProgress.map((p) => (
+              <div
+                key={p.user_id}
+                className="rounded-xl border bg-card p-4 flex items-center gap-3"
+              >
+                <div className="relative w-12 h-12 shrink-0">
+                  <svg viewBox="0 0 40 40" className="w-12 h-12 -rotate-90">
+                    <circle cx="20" cy="20" r="16" fill="none" stroke="hsl(var(--muted))" strokeWidth="4" />
+                    <circle
+                      cx="20"
+                      cy="20"
+                      r="16"
+                      fill="none"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                      strokeDasharray={2 * Math.PI * 16}
+                      strokeDashoffset={2 * Math.PI * 16 * (1 - p.pct / 100)}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold">
+                    {p.pct}%
+                  </div>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium truncate">{p.name}</div>
+                  <div className="text-xs text-muted-foreground flex flex-wrap gap-x-2">
+                    <span>{p.done} done</span>
+                    <span>·</span>
+                    <span>{p.open} open</span>
+                    {p.overdue > 0 && (
+                      <>
+                        <span>·</span>
+                        <span className="text-destructive font-medium">{p.overdue} overdue</span>
+                      </>
+                    )}
+                    {p.total === 0 && <span className="italic">No tasks yet</span>}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
       {/* Preseason Templates (coach/manager) */}
