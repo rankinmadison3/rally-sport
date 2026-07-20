@@ -249,6 +249,7 @@ const Profile = () => {
       }
 
       setProfile(data as ProfileRow);
+      notifyProfileUpdated();
       toast.success("Profile picture updated");
     } catch (err: any) {
       console.error(err);
