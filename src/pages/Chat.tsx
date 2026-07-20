@@ -448,8 +448,12 @@ const Chat = () => {
         <button onClick={backToList} className="md:hidden p-1.5 -ml-1.5 rounded-lg hover:bg-muted" aria-label="Back">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <div className="w-9 h-9 rounded-full bg-muted text-foreground flex items-center justify-center text-sm font-semibold">
-          {partner?.display_name.charAt(0).toUpperCase() ?? "?"}
+        <div className="w-9 h-9 rounded-full bg-muted text-foreground flex items-center justify-center text-sm font-semibold overflow-hidden">
+          {partner?.avatar_url ? (
+            <img src={partner.avatar_url} alt="" className="w-full h-full object-cover" />
+          ) : (
+            partner?.display_name.charAt(0).toUpperCase() ?? "?"
+          )}
         </div>
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
