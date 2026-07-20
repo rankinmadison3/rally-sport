@@ -27,6 +27,15 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { HeroCard, StatTile } from "@/components/ui/hero-card";
+import confetti from "canvas-confetti";
+
+const celebrate = () => {
+  const defaults = { spread: 70, ticks: 90, gravity: 1, decay: 0.94, startVelocity: 35, zIndex: 9999 };
+  const colors = ["#dc2626", "#ef4444", "#ffffff", "#fca5a5", "#b91c1c"];
+  confetti({ ...defaults, particleCount: 80, origin: { x: 0.2, y: 0.7 }, angle: 60, colors });
+  confetti({ ...defaults, particleCount: 80, origin: { x: 0.8, y: 0.7 }, angle: 120, colors });
+  confetti({ ...defaults, particleCount: 60, origin: { x: 0.5, y: 0.6 }, colors });
+};
 
 type Category = "Technical" | "Mental" | "Physical" | "Teamwork";
 const CATEGORIES: Category[] = ["Technical", "Mental", "Physical", "Teamwork"];
@@ -331,13 +340,14 @@ const Tasks = () => {
   };
 
   const toggleDone = async (task: TaskRow) => {
+    const willBeDone = !task.done;
     // Optimistic
     setTasks((prev) =>
-      prev.map((t) => (t.id === task.id ? { ...t, done: !t.done } : t))
+      prev.map((t) => (t.id === task.id ? { ...t, done: willBeDone } : t))
     );
     const { error } = await supabase
       .from("action_steps")
-      .update({ done: !task.done })
+      .update({ done: willBeDone })
       .eq("id", task.id);
     if (error) {
       toast.error("Failed to update task");
@@ -345,6 +355,10 @@ const Tasks = () => {
       setTasks((prev) =>
         prev.map((t) => (t.id === task.id ? { ...t, done: task.done } : t))
       );
+      return;
+    }
+    if (willBeDone && role === "player") {
+      celebrate();
     }
   };
 
