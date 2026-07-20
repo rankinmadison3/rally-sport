@@ -543,11 +543,18 @@ const TeamCalendar = () => {
           ) : null}
 
           {dayTasks.length > 0 && (
-            <div className="space-y-2 pt-1">
-              <p className="text-[11px] uppercase tracking-wider font-medium text-muted-foreground">My tasks</p>
+            <div className="space-y-2 pt-2 border-t border-border/50">
+              <p className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground flex items-center gap-1.5">
+                <ClipboardCheck className="w-3.5 h-3.5" /> My tasks
+              </p>
               {dayTasks.map((t) => (
-                <div key={t.id} className="p-3 rounded-lg bg-accent/40 flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-background flex items-center justify-center shrink-0">
+                <div
+                  key={t.id}
+                  className="p-3 rounded-xl bg-accent/40 hover:bg-accent/60 border border-border/30 flex items-start gap-3 transition-colors"
+                >
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                    t.done ? "bg-success/10" : "bg-background"
+                  }`}>
                     {t.done ? (
                       <CheckCircle2 className="w-4 h-4 text-success" />
                     ) : (
@@ -555,11 +562,11 @@ const TeamCalendar = () => {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-medium ${t.done ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                    <p className={`text-sm font-semibold ${t.done ? "line-through text-muted-foreground" : "text-foreground"}`}>
                       {t.text}
                     </p>
                     {t.category && (
-                      <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-background text-muted-foreground mt-1 inline-block">
+                      <span className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-background text-muted-foreground mt-1 inline-block font-medium">
                         {t.category}
                       </span>
                     )}
