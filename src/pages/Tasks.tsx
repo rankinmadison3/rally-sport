@@ -634,7 +634,7 @@ const Tasks = () => {
                       <p className="font-medium text-sm text-card-foreground leading-snug">
                         {t.text}
                       </p>
-                      {isCoachOrManager && (
+                      {(isCoachOrManager || (t.assigned_by === user?.id && t.user_id === user?.id)) && (
                         <div className="flex items-center gap-1 shrink-0">
                           <button
                             onClick={() => openEditTask(t)}
