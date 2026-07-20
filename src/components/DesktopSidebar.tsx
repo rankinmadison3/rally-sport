@@ -5,11 +5,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import logo from "@/assets/rally-sport-logo.png";
+import { useMyProfile } from "@/hooks/useMyProfile";
 
 const DesktopSidebar = () => {
   const { user, role } = useAuth();
   const navigate = useNavigate();
-  const initial = user?.email?.charAt(0).toUpperCase() ?? "?";
+  const { displayName, avatarUrl } = useMyProfile();
+  const initial = (displayName || user?.email || "?").charAt(0).toUpperCase();
   const isStaff = role === "coach" || role === "manager";
   const navItems = desktopNavItems.filter((item) => !item.staffOnly || isStaff);
 
@@ -59,11 +61,15 @@ const DesktopSidebar = () => {
             }`
           }
         >
-          <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold shrink-0">
-            {initial}
+          <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold shrink-0 overflow-hidden">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+            ) : (
+              initial
+            )}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-foreground">Profile</p>
+            <p className="text-xs font-medium text-foreground truncate">{displayName || "Profile"}</p>
             {user?.email && (
               <p className="text-[11px] text-muted-foreground truncate">{user.email}</p>
             )}

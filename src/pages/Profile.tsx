@@ -7,6 +7,7 @@ import {
 import { z } from "zod";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { notifyProfileUpdated } from "@/hooks/useMyProfile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -170,6 +171,7 @@ const Profile = () => {
         .single();
       if (error) throw error;
       setProfile(data as ProfileRow);
+      notifyProfileUpdated();
       setEditing(false);
       toast.success("Profile saved");
     } catch (err: any) {
@@ -247,6 +249,7 @@ const Profile = () => {
       }
 
       setProfile(data as ProfileRow);
+      notifyProfileUpdated();
       toast.success("Profile picture updated");
     } catch (err: any) {
       console.error(err);
@@ -277,6 +280,7 @@ const Profile = () => {
         .single();
       if (error) throw error;
       setProfile(data as ProfileRow);
+      notifyProfileUpdated();
       toast.success("Picture removed");
     } catch (err: any) {
       toast.error(err?.message || "Failed to remove");
