@@ -3,7 +3,7 @@ import { Trophy, XCircle, Clock, MapPin, ChevronLeft, ChevronRight, Plus, Downlo
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { format, startOfMonth, endOfMonth, getDay, getDaysInMonth, addMonths, subMonths, isSameMonth, isToday as isDateToday } from "date-fns";
+import { format, startOfMonth, endOfMonth, getDay, getDaysInMonth, addMonths, subMonths, isToday as isDateToday } from "date-fns";
 import { Button } from "@/components/ui/button";
 import EventDialog, { EventFormValue } from "@/components/calendar/EventDialog";
 import { downloadIcs } from "@/lib/icsExport";
