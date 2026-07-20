@@ -69,7 +69,7 @@ const DesktopSidebar = () => {
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-foreground">Profile</p>
+            <p className="text-xs font-medium text-foreground truncate">{displayName || "Profile"}</p>
             {user?.email && (
               <p className="text-[11px] text-muted-foreground truncate">{user.email}</p>
             )}
