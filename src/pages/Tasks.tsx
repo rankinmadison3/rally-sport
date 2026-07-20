@@ -660,6 +660,11 @@ const Tasks = () => {
                       <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full", CATEGORY_STYLES[t.category])}>
                         {t.category}
                       </span>
+                      {!isCoachOrManager && t.assigned_by === user?.id && t.user_id === user?.id && (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                          Personal
+                        </span>
+                      )}
                       {due && (
                         <span
                           className={cn(
