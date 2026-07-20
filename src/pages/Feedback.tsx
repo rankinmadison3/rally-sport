@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Send, Loader2, Plus, FileText, Calendar as CalendarIcon, Repeat, Users,
-  ChevronRight, Trash2, Pencil, ChevronDown, CheckCircle2, Clock,
+  ChevronRight, Trash2, Pencil, ChevronDown, CheckCircle2, Clock, Inbox, TrendingUp, MessageSquare,
 } from "lucide-react";
+import { HeroCard, StatTile } from "@/components/ui/hero-card";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
