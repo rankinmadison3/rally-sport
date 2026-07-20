@@ -403,96 +403,143 @@ const TeamCalendar = () => {
       </div>
 
       {selectedDay && (
-        <div className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] space-y-3">
+        <div className="bg-card rounded-2xl p-4 shadow-[var(--card-shadow)] border border-border/50 space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="font-display font-semibold text-card-foreground">
-              {format(new Date(year, month, selectedDay), "MMMM d")}
-            </h3>
+            <div>
+              <h3 className="font-display font-bold text-card-foreground text-lg">
+                {format(new Date(year, month, selectedDay), "MMMM d")}
+              </h3>
+              <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">
+                {format(new Date(year, month, selectedDay), "EEEE")}
+              </p>
+            </div>
             {canEdit && (
-              <Button size="sm" variant="ghost" onClick={openCreate} className="gap-1.5 h-8">
+              <Button size="sm" variant="ghost" onClick={openCreate} className="gap-1.5 h-9 rounded-full hover:bg-primary/10 hover:text-primary">
                 <Plus className="w-4 h-4" /> Add
               </Button>
             )}
           </div>
+
           {dayEvents.length > 0 ? (
-            dayEvents.map((evt) => (
-              <div key={evt.id} className="p-3 rounded-lg bg-muted space-y-2">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center shrink-0">
-                    {evt.event_type === "game" ? <Trophy className="w-4 h-4 text-primary" /> :
-                     evt.event_type === "absence" ? <XCircle className="w-4 h-4 text-destructive" /> :
-                     evt.event_type === "practice" ? <Dumbbell className="w-4 h-4 text-success" /> :
-                     <CalendarIcon className="w-4 h-4 text-muted-foreground" />}
+            dayEvents.map((evt) => {
+              const typeBorder =
+                evt.event_type === "game"
+                  ? "border-l-primary"
+                  : evt.event_type === "practice"
+                  ? "border-l-success"
+                  : evt.event_type === "absence"
+                  ? "border-l-destructive"
+                  : "border-l-muted-foreground";
+              return (
+                <div
+                  key={evt.id}
+                  className={`group p-3 rounded-xl bg-muted/60 hover:bg-muted border border-border/40 border-l-4 ${typeBorder} transition-all hover:shadow-md`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                      evt.event_type === "game"
+                        ? "bg-primary/10 text-primary"
+                        : evt.event_type === "practice"
+                        ? "bg-success/10 text-success"
+                        : evt.event_type === "absence"
+                        ? "bg-destructive/10 text-destructive"
+                        : "bg-accent text-accent-foreground"
+                    }`}>
+                      {evt.event_type === "game" ? <Trophy className="w-4 h-4" /> :
+                       evt.event_type === "absence" ? <XCircle className="w-4 h-4" /> :
+                       evt.event_type === "practice" ? <Dumbbell className="w-4 h-4" /> :
+                       <CalendarIcon className="w-4 h-4" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-semibold text-foreground">{evt.label}</p>
+                        <span className={`text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full font-semibold ${
+                          evt.event_type === "game"
+                            ? "bg-primary/10 text-primary"
+                            : evt.event_type === "practice"
+                            ? "bg-success/10 text-success"
+                            : evt.event_type === "absence"
+                            ? "bg-destructive/10 text-destructive"
+                            : "bg-muted text-muted-foreground"
+                        }`}>
+                          {evt.event_type}
+                        </span>
+                        {evt.event_type === "game" && !evt.is_regular_season && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">Non-season</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
+                        {evt.event_time && (
+                          <span className="inline-flex items-center gap-1 bg-background/70 px-1.5 py-0.5 rounded-md">
+                            <Clock className="w-3 h-3" /> {evt.event_time.slice(0, 5)}
+                          </span>
+                        )}
+                        {evt.location && (
+                          <span className="inline-flex items-center gap-1 bg-background/70 px-1.5 py-0.5 rounded-md">
+                            <MapPin className="w-3 h-3" /> {evt.location}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {canEdit && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary/10 hover:text-primary"
+                        onClick={() => openEdit(evt)}
+                        aria-label="Edit event"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-medium text-foreground">{evt.label}</p>
-                      <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-background text-muted-foreground">
-                        {evt.event_type}
+
+                  {/* Game result controls for coaches/managers */}
+                  {evt.event_type === "game" && canEdit && (
+                    <div className="space-y-2 pt-3 mt-3 border-t border-border/50">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs text-muted-foreground font-medium mr-1">Result:</span>
+                        {(["win", "loss", null] as const).map((result) => (
+                          <button
+                            key={result ?? "none"}
+                            disabled={updating === evt.id}
+                            onClick={() => updateEvent(evt.id, { game_result: result })}
+                            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                              evt.game_result === result
+                                ? result === "win"
+                                  ? "bg-success text-success-foreground shadow-sm"
+                                  : result === "loss"
+                                  ? "bg-destructive text-destructive-foreground shadow-sm"
+                                  : "bg-primary text-primary-foreground shadow-sm"
+                                : "bg-background text-muted-foreground hover:bg-accent"
+                            }`}
+                          >
+                            {result === "win" ? "Win" : result === "loss" ? "Loss" : "No Result"}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Read-only result display for players */}
+                  {evt.event_type === "game" && !canEdit && evt.game_result && (
+                    <div className="pt-3 mt-3 border-t border-border/50">
+                      <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                        evt.game_result === "win" ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"
+                      }`}>
+                        {evt.game_result === "win" ? "Win" : "Loss"}
                       </span>
-                      {evt.event_type === "game" && !evt.is_regular_season && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted-foreground/20 text-muted-foreground">Non-season</span>
-                      )}
                     </div>
-                    <div className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground flex-wrap">
-                      {evt.event_time && <><Clock className="w-3 h-3" /> {evt.event_time.slice(0,5)}</>}
-                      {evt.location && <><span className="mx-1">•</span><MapPin className="w-3 h-3" /> {evt.location}</>}
-                    </div>
-                  </div>
-                  {canEdit && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 w-8 p-0"
-                      onClick={() => openEdit(evt)}
-                      aria-label="Edit event"
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                    </Button>
                   )}
                 </div>
-
-                {/* Game result controls for coaches/managers */}
-                {evt.event_type === "game" && canEdit && (
-                  <div className="space-y-2 pt-2 border-t border-border/50">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-xs text-muted-foreground mr-1">Result:</span>
-                      {(["win", "loss", null] as const).map((result) => (
-                        <button
-                          key={result ?? "none"}
-                          disabled={updating === evt.id}
-                          onClick={() => updateEvent(evt.id, { game_result: result })}
-                          className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-                            evt.game_result === result
-                              ? result === "win"
-                                ? "bg-success text-success-foreground"
-                                : result === "loss"
-                                ? "bg-destructive text-destructive-foreground"
-                                : "bg-primary text-primary-foreground"
-                              : "bg-background text-muted-foreground hover:bg-accent"
-                          }`}
-                        >
-                          {result === "win" ? "Win" : result === "loss" ? "Loss" : "No Result"}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Read-only result display for players */}
-                {evt.event_type === "game" && !canEdit && evt.game_result && (
-                  <div className="pt-2 border-t border-border/50">
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                      evt.game_result === "win" ? "bg-success/20 text-success" : "bg-destructive/20 text-destructive"
-                    }`}>
-                      {evt.game_result === "win" ? "Win" : "Loss"}
-                    </span>
-                  </div>
-                )}
-              </div>
-            ))
+              );
+            })
           ) : dayTasks.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No events scheduled.</p>
+            <div className="text-center py-8 rounded-xl bg-muted/40 border border-dashed border-border">
+              <CalendarIcon className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground font-medium">No events scheduled</p>
+              <p className="text-xs text-muted-foreground/70">Select another day or add a new event.</p>
+            </div>
           ) : null}
 
           {dayTasks.length > 0 && (
