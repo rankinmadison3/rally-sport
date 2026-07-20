@@ -331,15 +331,10 @@ const Chat = () => {
     );
   }
 
-  /* ---------- filter chip state ---------- */
+  /* ---------- rail summary ---------- */
   const totalUnread = groupUnread + Array.from(unreadByMember.values()).reduce((a, b) => a + b, 0);
   const staffMembers = otherMembers.filter((m) => m.role === "coach" || m.role === "manager");
 
-  const [listFilter, _setListFilter] = [
-    // inline read-only usage; use local state
-    (undefined as unknown as "all" | "unread" | "staff"),
-    (undefined as unknown as (v: "all" | "unread" | "staff") => void),
-  ];
 
   /* ---------- panes ---------- */
   const ListPane = (
