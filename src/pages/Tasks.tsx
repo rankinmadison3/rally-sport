@@ -420,11 +420,9 @@ const Tasks = () => {
         >
           <ArrowLeft className="w-4 h-4 text-muted-foreground" />
         </button>
-        {isCoachOrManager && (
-          <Button onClick={openCreateDialog} size="sm" className="gap-1.5">
-            <Plus className="w-4 h-4" /> New
-          </Button>
-        )}
+        <Button onClick={openCreateDialog} size="sm" className="gap-1.5">
+          <Plus className="w-4 h-4" /> New
+        </Button>
       </div>
 
       {/* Hero — Progress board */}
