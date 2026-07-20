@@ -680,7 +680,7 @@ export type Database = {
         Args: {
           p_display_name: string
           p_role: Database["public"]["Enums"]["app_role"]
-          p_team_code?: string
+          p_team_code: string
         }
         Returns: string
       }
