@@ -233,23 +233,58 @@ const Feedback = () => {
 
   // -------- COACH / MANAGER VIEW --------
   if (isCoachOrManager) {
+    const totalResponses = broadcasts.reduce((s, g) => s + g.submitted, 0);
+    const totalOutstanding = broadcasts.reduce((s, g) => s + (g.total - g.submitted), 0);
+    const totalSent = broadcasts.reduce((s, g) => s + g.total, 0);
+    const responseRate = totalSent === 0 ? 0 : Math.round((totalResponses / totalSent) * 100);
+
     return (
-      <div className="p-4 space-y-5 max-w-3xl mx-auto">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              {role === "coach" ? "Coach's View" : "Manager's View"}
-            </p>
-            <h1 className="text-2xl font-bold font-display text-foreground">Feedback</h1>
-            <p className="text-sm text-muted-foreground mt-1">Create, send, and track team feedback.</p>
-          </div>
-          <Button
-            onClick={() => { setBuilderTemplateId(null); setBuilderEditId(null); setBuilderOpen(true); }}
-            size="sm"
-          >
-            <Plus className="w-4 h-4" /> New feedback
-          </Button>
+      <div className="p-4 space-y-5 max-w-5xl mx-auto">
+        <HeroCard
+          eyebrow={role === "coach" ? "Coach's Command · Feedback" : "Manager's Command · Feedback"}
+          title="Feedback"
+          subtitle="Build surveys, broadcast them to the team, and watch responses roll in."
+          icon={<MessageSquare className="w-5 h-5" />}
+          right={
+            <button
+              onClick={() => { setBuilderTemplateId(null); setBuilderEditId(null); setBuilderOpen(true); }}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-primary-foreground text-primary px-3.5 py-2 text-sm font-semibold shadow-sm hover:opacity-90 transition-opacity"
+            >
+              <Plus className="w-4 h-4" /> New form
+            </button>
+          }
+        />
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <StatTile
+            icon={<Send className="w-4 h-4" />}
+            label="Active"
+            value={broadcasts.length}
+            hint={`${totalSent} sent`}
+          />
+          <StatTile
+            icon={<CheckCircle2 className="w-4 h-4" />}
+            label="Responses"
+            value={totalResponses}
+            hint={`${totalOutstanding} pending`}
+            accent="bg-emerald-500/15 text-emerald-600"
+          />
+          <StatTile
+            icon={<TrendingUp className="w-4 h-4" />}
+            label="Response rate"
+            value={`${responseRate}%`}
+            hint="across broadcasts"
+            accent="bg-amber-500/15 text-amber-600"
+          />
+          <StatTile
+            icon={<FileText className="w-4 h-4" />}
+            label="Forms"
+            value={myForms.length}
+            hint={`${templates.length} templates`}
+            accent="bg-blue-500/15 text-blue-600"
+          />
         </div>
+
 
         <Tabs defaultValue="active" className="w-full">
           <TabsList className="grid grid-cols-3 w-full">
