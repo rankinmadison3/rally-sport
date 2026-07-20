@@ -462,22 +462,30 @@ const Feedback = () => {
   const submitted = playerAssignments.filter((a) => a.status === "submitted");
 
   return (
-    <div className="p-4 space-y-6 max-w-3xl mx-auto">
-      <div>
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Player's View</p>
-        <h1 className="text-2xl font-bold font-display text-foreground">Feedback</h1>
-        <p className="text-sm text-muted-foreground mt-1">Feedback your coach has assigned to you.</p>
+    <div className="p-4 space-y-5 max-w-3xl mx-auto">
+      <HeroCard
+        eyebrow="Your Feedback"
+        title={pending.length > 0 ? `${pending.length} awaiting you` : "You're all caught up"}
+        subtitle={pending.length > 0
+          ? "Your coach wants to hear from you. Tap any form below to respond."
+          : "No feedback requests right now. Check back later."}
+        icon={<Inbox className="w-5 h-5" />}
+      />
+
+      <div className="grid grid-cols-2 gap-3">
+        <StatTile icon={<Clock className="w-4 h-4" />} label="Pending" value={pending.length} accent="bg-amber-500/15 text-amber-600" />
+        <StatTile icon={<CheckCircle2 className="w-4 h-4" />} label="Submitted" value={submitted.length} accent="bg-emerald-500/15 text-emerald-600" />
       </div>
 
       {/* Pending */}
       <div className="space-y-3">
-        <h2 className="font-display font-semibold text-foreground flex items-center gap-2">
-          <FileText className="w-4 h-4 text-primary" /> Pending Feedback
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+          <FileText className="w-3.5 h-3.5" /> Pending
         </h2>
         {loading ? (
           <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
         ) : pending.length === 0 ? (
-          <p className="text-sm text-muted-foreground bg-card rounded-xl p-4 shadow-[var(--card-shadow)]">
+          <p className="text-sm text-muted-foreground bg-card rounded-2xl p-6 text-center shadow-[var(--card-shadow)] border border-border/60">
             No feedback requests right now.
           </p>
         ) : (
@@ -485,15 +493,19 @@ const Feedback = () => {
             <button
               key={a.id}
               onClick={() => navigate(`/feedback/assignment/${a.id}`)}
-              className="w-full bg-card rounded-xl p-4 shadow-[var(--card-shadow)] flex items-center gap-3 hover:bg-accent/50 transition-colors text-left"
+              className="w-full bg-card rounded-2xl p-4 shadow-[var(--card-shadow)] border border-border/60 flex items-center gap-3 hover:border-primary/40 hover:-translate-y-0.5 transition-all text-left"
             >
-              <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center shrink-0">
-                <FileText className="w-5 h-5 text-accent-foreground" />
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
+                <FileText className="w-5 h-5 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm text-card-foreground truncate">{a.form?.name ?? "Feedback"}</p>
+                <p className="font-semibold text-sm text-card-foreground truncate">{a.form?.name ?? "Feedback"}</p>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                  {a.due_date && <span>Due {new Date(a.due_date).toLocaleDateString()}</span>}
+                  {a.due_date ? (
+                    <span className="inline-flex items-center gap-1"><CalendarIcon className="w-3 h-3" />Due {new Date(a.due_date).toLocaleDateString()}</span>
+                  ) : (
+                    <span>No due date</span>
+                  )}
                 </div>
               </div>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
@@ -501,6 +513,7 @@ const Feedback = () => {
           ))
         )}
       </div>
+
 
       {/* Submitted */}
       {submitted.length > 0 && (
