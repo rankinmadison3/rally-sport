@@ -61,8 +61,12 @@ const DesktopSidebar = () => {
             }`
           }
         >
-          <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold shrink-0">
-            {initial}
+          <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold shrink-0 overflow-hidden">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+            ) : (
+              initial
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs font-medium text-foreground">Profile</p>
