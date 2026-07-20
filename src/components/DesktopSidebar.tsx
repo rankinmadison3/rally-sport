@@ -25,7 +25,7 @@ const DesktopSidebar = () => {
   return (
     <aside className="hidden md:flex fixed inset-y-0 left-0 w-60 flex-col bg-sidebar border-r border-sidebar-border z-40">
       <div className="h-20 flex items-center px-6 border-b border-sidebar-border">
-        <img src={logo} alt="Rally Sport" className="h-10 w-auto object-contain" />
+        <img src={logo} alt="Rally Sport" className="h-12 w-auto object-contain" />
       </div>
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
         {navItems.map((item) => (
