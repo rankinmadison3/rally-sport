@@ -1,50 +1,39 @@
-# Deepen the design across Tasks, Calendar, Reflections, Profile, Chat
+## Plan: App-wide red-and-white aura background
 
-Bring the other core pages up to the Dashboard's fidelity level. Same visual DNA — crimson gradient hero card, layered SVG data viz, tile grids on a soft off-white surface — but each page gets its own motif so it doesn't feel copy-pasted.
+### Goal
+Introduce a full-bleed, gently pulsing red-and-white aura behind every page while keeping text and cards fully readable and preserving the existing crimson/white design language.
 
-## Shared design language (reused across all five pages)
+### What will change
+1. **Global background layer**  
+   Add a fixed `div` inside `src/components/AppLayout.tsx` that sits behind the sidebar and main content. It will render layered, oversized radial gradients in `hsl(var(--primary))` and white, softly bleeding into the off-white page background.
 
-- **Hero card:** rounded-3xl, `linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.82) 100%)`, subtle inner grid or radial glow overlay, primary-foreground text, uppercase tracked eyebrow + display headline + 1–2 line context strip.
-- **Stat tiles:** white cards with `shadow-[var(--card-shadow)]`, small icon in tinted circle, big display number, muted label. Grid of 2–4.
-- **Section headers:** `text-sm uppercase tracking-wider text-muted-foreground`, matching Dashboard.
-- **SVG viz:** thin `stroke-primary-foreground/50` gridlines, filled area with `primary-foreground/20`, animated `pathLength` intro (framer-motion, one shot).
-- No new color tokens — everything comes from existing semantic HSL vars.
+2. **Pulse animation**  
+   Add a new keyframe to `tailwind.config.ts` and `src/index.css` that slowly scales and shifts opacity of the aura blobs (≈8–12s loop, ease-in-out, infinite). The motion will be subtle enough not to distract coaches/players using the app daily.
 
-## Per-page motifs
+3. **Readability safeguards**  
+   - Keep cards and sidebars on solid `bg-card` / `bg-sidebar-background` surfaces so content stays crisp.  
+   - Use low-opacity primary tints (`hsl(var(--primary) / 0.08)` to `0.18`) so the aura is atmospheric, not dominant.  
+   - Ensure `pointer-events-none` and `fixed inset-0` so it never blocks interaction.
 
-### 1. Tasks — "Progress board"
-- Hero: gradient card with a **completion ring** (SVG donut, same technique as Dashboard's season ring) showing % of open tasks completed, plus counters for Open / Done / Overdue.
-- Under the hero: 4 category tiles (Technical / Mental / Physical / Teamwork) with count + tiny bar of open vs done, each tinted with the existing CATEGORY_STYLES accent.
-- Existing task list and dialog untouched functionally — just wrapped in the new frame with softer section headers and hover lift.
+4. **Dark-mode behavior**  
+   The aura will auto-adapt because it consumes `hsl(var(--primary) / …)` and `hsl(var(--background))`. In dark mode the background is near-black, so the same low-opacity red blobs will read as a faint crimson glow rather than a white wash.
 
-### 2. Team Calendar — "Season strip"
-- Hero: gradient card headlining the **next upcoming event** (icon + date + label + countdown "in 3 days"), with a horizontal 14-day strip of dots along the bottom showing event density (game = red dot, practice = white dot, task = ring).
-- Legend and month calendar move into a `card` container with the same shadow. Icons in cells stay as-is (bigger sizing you already have).
-- Selected-day panel becomes a proper card with a colored top border matching the day's dominant event type.
+5. **Mobile / iOS safe-area handling**  
+   The background layer will span the full viewport including safe-area insets (`min-h-[100dvh]`, `w-screen`, `left-0`, `top-0`) so the aura fills the screen on iPhones without clipping behind the notch or home indicator.
 
-### 3. Reflections — "Mood pulse"
-- Hero: gradient card with a **7-day mood curve** SVG (area under curve, same viz style as Dashboard's morale hero) and three inline stats: Avg mood, Streak, Response rate.
-- Coach/manager view: keeps trend charts, but wrapped in the new hero + comparison tiles (Coach vs Player) sitting in a 2-col bento.
-- Player view: today's check-in card gets the elevated white-card treatment with a big emoji scale row.
+6. **Performance**  
+   Use CSS-only animation (transform + opacity) with `will-change-transform` on the pseudo/layer elements. No JS animation loop, no canvas, no heavy blur filters beyond one static `blur-3xl`.
 
-### 4. Profile — "Identity banner"
-- Hero: crimson gradient banner with the avatar overlapping the bottom edge (large, ring-4 ring-background), display name, role badge, and a subtle inline **team code chip** with copy button.
-- Below: tabbed sections (Personal / Physical / Emergency) rendered as bento tiles with the shared card treatment. Edit affordances stay pencil-icon based.
+### Files to edit
+- `src/components/AppLayout.tsx` — insert fixed aura layer behind routed content.
+- `src/index.css` — add `.aura-bg` utility and pulse keyframe tokens.
+- `tailwind.config.ts` — register the new `aura-pulse` animation class.
 
-### 5. Chat — "Signal room"
-- List column header becomes a compact gradient strip with unread total pulse dot.
-- Conversation rows: elevated cards with avatar, name, last-message preview, timestamp, and an unread badge tinted primary.
-- Thread pane: sticky gradient header with the counterpart's name + status, message bubbles gain more air (larger radius, tighter typography scale).
+### Not in scope
+- No changes to individual page content, cards, or typography.
+- No login-only or hero-only variant; this is the global app shell.
+- No user toggle to disable the aura in this pass.
 
-## Technical notes
-
-- All changes are presentation-only. No schema/RLS/service-layer edits.
-- Files touched: `src/pages/Tasks.tsx`, `src/pages/TeamCalendar.tsx`, `src/pages/Reflections.tsx`, `src/pages/Profile.tsx`, `src/pages/Chat.tsx`.
-- May extract a `HeroCard` + `StatTile` primitive into `src/components/ui/hero-card.tsx` if reused ≥3 times — otherwise inline for simplicity.
-- Framer-motion is already a dep; use it for the single hero intro animation per page (fade + slide-up, ~400ms).
-- Preserve all `data-tour` attributes so the orientation tutorial still anchors correctly.
-- Mobile-first: hero card scales down cleanly, stat tiles reflow to 2-col on `<sm`.
-
-## Rollout
-
-Ship all five in one pass, in the order listed above (Tasks → Calendar → Reflections → Profile → Chat).
+### Verification
+- Build/typecheck passes.
+- Visual check in preview: aura visible behind Dashboard, Tasks, Calendar, Profile, and Chat; content remains readable; animation loops smoothly without jank.

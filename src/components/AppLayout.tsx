@@ -41,12 +41,31 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      {/* Global red-and-white aura background */}
+      <div
+        className="fixed inset-0 z-0 pointer-events-none overflow-hidden"
+        aria-hidden="true"
+      >
+        <div
+          className="absolute -top-[20%] -left-[10%] w-[70vw] h-[70vw] rounded-full bg-primary/10 blur-[120px] animate-aura-pulse"
+          style={{ willChange: "transform, opacity" }}
+        />
+        <div
+          className="absolute top-[30%] -right-[15%] w-[60vw] h-[60vw] rounded-full bg-primary/[0.06] blur-[100px] animate-aura-pulse-slow"
+          style={{ willChange: "transform, opacity", animationDelay: "-3s" }}
+        />
+        <div
+          className="absolute -bottom-[20%] left-[20%] w-[50vw] h-[50vw] rounded-full bg-primary-foreground/50 blur-[90px] animate-aura-pulse"
+          style={{ willChange: "transform, opacity", animationDelay: "-7s" }}
+        />
+      </div>
+
       {/* Desktop sidebar */}
       <DesktopSidebar />
 
       {/* Mobile shell */}
-      <div className="md:hidden flex flex-col min-h-[100dvh] max-w-md mx-auto bg-background relative">
+      <div className="md:hidden flex flex-col min-h-[100dvh] max-w-md mx-auto relative">
         <div
           id="app-main-content"
           className="flex-1 overflow-y-auto"

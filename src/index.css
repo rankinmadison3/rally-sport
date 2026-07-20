@@ -112,3 +112,32 @@
     font-family: var(--font-display);
   }
 }
+
+@layer utilities {
+  /* Gentle red-and-white aura pulse used behind the app shell */
+  @keyframes aura-pulse {
+    0%, 100% {
+      opacity: 0.35;
+      transform: scale(1) translate(0%, 0%);
+    }
+    33% {
+      opacity: 0.55;
+      transform: scale(1.05) translate(2%, -1%);
+    }
+    66% {
+      opacity: 0.3;
+      transform: scale(0.97) translate(-1%, 2%);
+    }
+  }
+
+  @keyframes aura-pulse-slow {
+    0%, 100% {
+      opacity: 0.2;
+      transform: scale(1) translate(0%, 0%);
+    }
+    50% {
+      opacity: 0.45;
+      transform: scale(1.08) translate(-2%, 1%);
+    }
+  }
+}
