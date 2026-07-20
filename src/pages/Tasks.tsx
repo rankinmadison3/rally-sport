@@ -154,7 +154,12 @@ const Tasks = () => {
     setFormNotes("");
     setFormCategory("Technical");
     setFormDueDate(undefined);
-    setFormAssignee(players.length === 0 ? TEMPLATE_SENTINEL : "");
+    if (isCoachOrManager) {
+      setFormAssignee(players.length === 0 ? TEMPLATE_SENTINEL : "");
+    } else {
+      // Players can only assign to themselves
+      setFormAssignee(user?.id ?? "");
+    }
     setEditingTask(null);
     setEditingTemplate(null);
   };
@@ -162,7 +167,11 @@ const Tasks = () => {
   // When opening the dialog, default to template mode if there's no roster yet
   const openCreateDialog = () => {
     resetForm();
-    setFormAssignee(players.length === 0 ? TEMPLATE_SENTINEL : "");
+    if (isCoachOrManager) {
+      setFormAssignee(players.length === 0 ? TEMPLATE_SENTINEL : "");
+    } else {
+      setFormAssignee(user?.id ?? "");
+    }
     setDialogOpen(true);
   };
 
@@ -195,7 +204,9 @@ const Tasks = () => {
       toast.error("Task title is required");
       return;
     }
-    if (!formAssignee) {
+    // Players always assign to themselves
+    const effectiveAssignee = isCoachOrManager ? formAssignee : user.id;
+    if (!effectiveAssignee) {
       toast.error("Please choose who this task is for");
       return;
     }
