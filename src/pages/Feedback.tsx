@@ -518,14 +518,14 @@ const Feedback = () => {
       {/* Submitted */}
       {submitted.length > 0 && (
         <div className="space-y-3">
-          <h2 className="font-display font-semibold text-foreground">Submitted</h2>
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Submitted</h2>
           {submitted.map((a) => (
             <div
               key={a.id}
-              className="bg-card rounded-xl p-4 shadow-[var(--card-shadow)] flex items-center gap-3 opacity-80"
+              className="bg-card/70 rounded-2xl p-4 shadow-[var(--card-shadow)] border border-border/60 flex items-center gap-3"
             >
-              <div className="w-10 h-10 rounded-lg bg-success/15 flex items-center justify-center shrink-0">
-                <CheckCircle2 className="w-5 h-5 text-success" />
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm text-card-foreground truncate">{a.form?.name ?? "Feedback"}</p>
