@@ -42,22 +42,26 @@ const AppLayout = ({ children }: { children: ReactNode }) => {
 
   return (
     <div className="min-h-screen bg-background relative">
-      {/* Global red-and-white aura background */}
+      {/* Global saturated crimson aura background */}
       <div
         className="fixed inset-0 z-0 pointer-events-none overflow-hidden"
         aria-hidden="true"
       >
         <div
-          className="absolute -top-[20%] -left-[10%] w-[70vw] h-[70vw] rounded-full bg-primary/10 blur-[120px] animate-aura-pulse"
+          className="absolute -top-[25%] -left-[15%] w-[80vw] h-[80vw] rounded-full bg-primary/30 blur-[140px] animate-aura-pulse"
           style={{ willChange: "transform, opacity" }}
         />
         <div
-          className="absolute top-[30%] -right-[15%] w-[60vw] h-[60vw] rounded-full bg-primary/[0.06] blur-[100px] animate-aura-pulse-slow"
+          className="absolute top-[25%] -right-[20%] w-[70vw] h-[70vw] rounded-full bg-primary/25 blur-[120px] animate-aura-pulse-slow"
           style={{ willChange: "transform, opacity", animationDelay: "-3s" }}
         />
         <div
-          className="absolute -bottom-[20%] left-[20%] w-[50vw] h-[50vw] rounded-full bg-primary-foreground/50 blur-[90px] animate-aura-pulse"
+          className="absolute -bottom-[25%] left-[10%] w-[65vw] h-[65vw] rounded-full bg-primary/20 blur-[110px] animate-aura-pulse"
           style={{ willChange: "transform, opacity", animationDelay: "-7s" }}
+        />
+        <div
+          className="absolute top-[55%] left-[35%] w-[45vw] h-[45vw] rounded-full bg-primary/15 blur-[100px] animate-aura-pulse-slow"
+          style={{ willChange: "transform, opacity", animationDelay: "-5s" }}
         />
       </div>
 
